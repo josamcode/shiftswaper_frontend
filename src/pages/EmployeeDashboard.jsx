@@ -1512,7 +1512,7 @@ const EmployeeDashboard = () => {
                   </div>
                 )}
                 {/* Action Buttons - Only for Own Requests */}
-                <div className="flex justify-end space-x-3 pt-4 border-t">       
+                <div className="flex justify-end space-x-3 pt-4 border-t">
                   {canEdit(selectedRequest) && (
                     <button
                       onClick={() => {

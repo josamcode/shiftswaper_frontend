@@ -7,6 +7,7 @@ import { checkAuthStatus } from '../utils/checkAuthRedirect';
 const positionOptions = [
   { value: 'expert', label: 'Expert' },
   { value: 'supervisor', label: 'Supervisor' },
+  { value: 'moderator', label: 'Moderator' },
   { value: 'sme', label: 'Subject Matter Expert (SME)' }
 ];
 
@@ -30,7 +31,9 @@ const EmployeeRegistration = () => { // Remove setCurrentPage prop
     email: '',
     position: '',
     password: '',
-    companyId: ''
+    companyId: '',
+    employeeId: '',
+    phoneNumber: ''
   });
 
   useEffect(() => {
@@ -131,6 +134,22 @@ const EmployeeRegistration = () => { // Remove setCurrentPage prop
     if (!formData.companyId) {
       newErrors.companyId = 'Company selection is required';
     }
+    // Validate Employee ID
+    if (!formData.employeeId.trim()) {
+      newErrors.employeeId = 'Employee ID is required';
+    }
+
+    // Validate Phone Number
+    if (!formData.phoneNumber.trim()) {
+      newErrors.phoneNumber = 'Phone number is required';
+    } else {
+      const phone = formData.phoneNumber.trim();
+      // Simple international format check: starts with +, has 8–15 digits
+      const phoneRegex = /^\+[1-9]\d{0,2}[ -]?\d{4,14}$/;
+      if (!phoneRegex.test(phone)) {
+        newErrors.phoneNumber = 'Enter a valid international phone number (e.g., +1 555-123-4567)';
+      }
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -151,7 +170,9 @@ const EmployeeRegistration = () => { // Remove setCurrentPage prop
           email: formData.email.toLowerCase().trim(),
           position: formData.position,
           password: formData.password,
-          companyId: formData.companyId
+          companyId: formData.companyId,
+          employeeId: formData.employeeId.trim(),
+          phoneNumber: formData.phoneNumber.trim()
         }),
       });
       const data = await response.json();
@@ -457,6 +478,55 @@ const EmployeeRegistration = () => { // Remove setCurrentPage prop
                   <p className="text-sm text-red-600">{errors.position}</p>
                 </div>
               )}
+            </div>
+            {/* Employee ID */}
+            <div>
+              <label htmlFor="employeeId" className="block text-sm font-medium text-gray-700 mb-1">
+                Employee ID *
+              </label>
+              <input
+                id="employeeId"
+                name="employeeId"
+                type="text"
+                value={formData.employeeId}
+                onChange={handleChange}
+                className={`w-full px-3 py-2 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 ${errors.employeeId ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  }`}
+                placeholder="EMP-XXXX-EXP-12345"
+                disabled={isLoading}
+              />
+              {errors.employeeId && (
+                <div className="flex items-center space-x-1 mt-1">
+                  <AlertCircle className="h-4 w-4 text-red-500" />
+                  <p className="text-sm text-red-600">{errors.employeeId}</p>
+                </div>
+              )}
+            </div>
+            {/* Phone Number */}
+            <div>
+              <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
+                Phone Number (International) *
+              </label>
+              <input
+                id="phoneNumber"
+                name="phoneNumber"
+                type="tel"
+                value={formData.phoneNumber}
+                onChange={handleChange}
+                className={`w-full px-3 py-2 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 ${errors.phoneNumber ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  }`}
+                placeholder="+1 555-123-4567"
+                disabled={isLoading}
+              />
+              {errors.phoneNumber && (
+                <div className="flex items-center space-x-1 mt-1">
+                  <AlertCircle className="h-4 w-4 text-red-500" />
+                  <p className="text-sm text-red-600">{errors.phoneNumber}</p>
+                </div>
+              )}
+              <p className="mt-1 text-xs text-gray-500">
+                Include country code (e.g., +971, +1, +44)
+              </p>
             </div>
             {/* Password */}
             <div>

@@ -136,6 +136,14 @@ const Footer = () => {
                   {social.label}
                 </a>
               ))}
+              <a
+                href=""
+                // target="_blank"
+                rel="noopener noreferrer"
+                className="text-secondary-400 hover:text-white text-sm transition-colors duration-200"
+              >
+                Created by Gerges Samuel
+              </a>
             </div>
           </div>
         </div>

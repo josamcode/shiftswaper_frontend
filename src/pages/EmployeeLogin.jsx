@@ -19,7 +19,7 @@ const EmployeeLogin = () => {
   }, [navigate]);
 
   const [formData, setFormData] = useState({
-    email: '',
+    identifier: '',
     password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -48,23 +48,29 @@ const EmployeeLogin = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-
-    // Clear errors when user starts typing
+    // Clear error on typing
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
-    if (errors.submit) {
-      setErrors(prev => ({ ...prev, submit: '' }));
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
     }
   };
 
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+    const identifier = formData.identifier.trim();
+    if (!identifier) {
+      newErrors.identifier = 'Email or Employee ID is required';
+    }
+
+    // Optional: Validate email format only if it looks like an email
+    if (identifier && /\S+@\S+\.\S+/.test(identifier)) {
+      if (!/\S+@\S+\.\S+/.test(identifier)) {
+        newErrors.identifier = 'Please enter a valid email address';
+      }
     }
 
     if (!formData.password.trim()) {
@@ -77,109 +83,81 @@ const EmployeeLogin = () => {
 
   const handleSubmit = async () => {
     if (!validateForm()) return;
-
     setIsLoading(true);
     setErrors({});
     setSuccessMessage('');
 
     try {
+      const identifier = formData.identifier.trim();
+
+      // Determine if it's an email or employee ID
+      const isEmail = /\S+@\S+\.\S+/.test(identifier);
+      const payload = {
+        password: formData.password
+      };
+
+      if (isEmail) {
+        payload.email = identifier.toLowerCase();
+      } else {
+        payload.employeeId = identifier.toUpperCase(); // Ensure uppercase
+      }
+
       const response = await fetch(`${process.env.REACT_APP_URI_API_URL}/api/employee-requests/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          email: formData.email.toLowerCase().trim(),
-          password: formData.password
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Store authentication token and employee data
-        if (data.data.token) {
-          const { position } = data.data.employee;
-          const prefix = position === 'supervisor' ? 'supervisor' : 'employee';
-
-          Cookies.set(`${prefix}_token`, data.data.token, {
-            expires: 7,
-            secure: true,
-            sameSite: 'strict'
-          });
-
-          Cookies.set(`${prefix}_data`, JSON.stringify(data.data.employee), {
-            expires: 7,
-            secure: true,
-            sameSite: 'strict'
-          });
+        const { position } = data.data.employee;
+        let prefix;
+        if (position === 'supervisor') {
+          prefix = 'supervisor';
+        } else if (position === 'moderator') {
+          prefix = 'moderator';
+        } else {
+          prefix = 'employee';
         }
 
-        login();
+        Cookies.set(`${prefix}_token`, data.data.token, {
+          expires: 7,
+          secure: true,
+          sameSite: 'strict'
+        });
+        Cookies.set(`${prefix}_data`, JSON.stringify(data.data.employee), {
+          expires: 7,
+          secure: true,
+          sameSite: 'strict'
+        });
 
-        // Success - redirect to employee dashboard
+        login();
         setSuccessMessage(`Welcome back, ${data.data.employee.fullName}!`);
 
         setTimeout(() => {
-          if (navigate) {
-            navigate('/dashboard');
-          } else {
-            // Fallback for demo
-            alert(`Login successful! Welcome ${data.data.employee.fullName}`);
-          }
+          navigate('/dashboard');
         }, 1500);
-
       } else {
-        // Handle API errors
+        let errorMsg = 'Invalid credentials. Please check and try again.';
         if (data.message) {
           if (data.message.includes('pending approval')) {
-            setErrors({
-              submit: 'Your registration request is still pending approval from the company. Please wait for approval before attempting to login.'
-            });
+            errorMsg = 'Your registration request is still pending approval.';
           } else if (data.message.includes('rejected')) {
-            // Extract rejection reason if available
-            const reasonMatch = data.message.match(/Reason: (.+)$/);
-            const reason = reasonMatch ? reasonMatch[1] : 'No reason provided';
-            setErrors({
-              submit: `Your registration request was rejected. Reason: ${reason}. Please contact your company for more information.`
-            });
+            errorMsg = data.message;
           } else if (data.message.includes('Employee not found')) {
-            setErrors({
-              submit: 'No employee account found with this email. Please check your email or register for an account.'
-            });
+            errorMsg = 'No account found with that email or ID.';
           } else if (data.message.includes('Invalid email or password')) {
-            setErrors({
-              submit: 'Invalid email or password. Please check your credentials and try again.'
-            });
-          } else if (data.errors && data.errors.length > 0) {
-            // Handle validation errors from backend
-            const backendErrors = {};
-            data.errors.forEach(error => {
-              if (error.path) {
-                backendErrors[error.path] = error.msg;
-              }
-            });
-            setErrors(backendErrors);
-          } else {
-            setErrors({ submit: data.message });
+            errorMsg = 'Incorrect password or ID.';
           }
-        } else {
-          setErrors({ submit: 'Login failed. Please try again.' });
         }
+        setErrors({ submit: errorMsg });
       }
-
     } catch (error) {
       console.error('Login error:', error);
-
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        setErrors({
-          submit: 'Unable to connect to server. Please check your internet connection and try again.'
-        });
-      } else {
-        setErrors({
-          submit: 'An unexpected error occurred. Please try again later.'
-        });
-      }
+      setErrors({ submit: 'Unable to connect to server. Please try again.' });
     } finally {
       setIsLoading(false);
     }
@@ -243,28 +221,27 @@ const EmployeeLogin = () => {
           )}
 
           <div className="space-y-4">
-            {/* Email */}
+            {/* Email or Employee ID */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email Address *
+              <label htmlFor="identifier" className="block text-sm font-medium text-gray-700 mb-1">
+                Email or Employee ID *
               </label>
               <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                value={formData.email}
+                id="identifier"
+                name="identifier"
+                type="text"
+                value={formData.identifier}
                 onChange={handleChange}
                 onKeyPress={handleKeyPress}
-                className={`w-full px-3 py-2 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 ${errors.email ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                className={`w-full px-3 py-2 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 ${errors.identifier ? 'border-red-300 bg-red-50' : 'border-gray-300'
                   }`}
-                placeholder="your.email@example.com"
+                placeholder="Enter your email or employee ID"
                 disabled={isLoading}
               />
-              {errors.email && (
+              {errors.identifier && (
                 <div className="flex items-center space-x-1 mt-1">
                   <AlertCircle className="h-4 w-4 text-red-500" />
-                  <p className="text-sm text-red-600">{errors.email}</p>
+                  <p className="text-sm text-red-600">{errors.identifier}</p>
                 </div>
               )}
             </div>
@@ -331,7 +308,7 @@ const EmployeeLogin = () => {
           {/* Submit Button */}
           <button
             onClick={handleSubmit}
-            disabled={isLoading || !formData.email || !formData.password}
+            disabled={isLoading || !formData.identifier || !formData.password}
             className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center"
           >
             {isLoading ? (

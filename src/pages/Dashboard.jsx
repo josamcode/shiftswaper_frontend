@@ -14,6 +14,7 @@ import {
 import CompanyDashboard from './CompanyDashboard';
 import EmployeeDashboard from './EmployeeDashboard';
 import SupervisorDashboard from './SupervisorDashboard';
+import ModeratorDashboard from './ModeratorDashboard';
 
 const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -22,6 +23,7 @@ const Dashboard = () => {
   const companyToken = Cookies.get('company_token') || null;
   const supervisorToken = Cookies.get('supervisor_token') || null;
   const employeeToken = Cookies.get('employee_token') || null;
+  const moderatorToken = Cookies.get('moderator_token') || null;
 
   useEffect(() => {
     const checkAuthentication = () => {
@@ -32,6 +34,8 @@ const Dashboard = () => {
           setUserType('supervisor');
         } else if (employeeToken) {
           setUserType('employee');
+        } else if (moderatorToken) {
+          setUserType('moderator');
         }
         setIsLoading(false);
       }, 0);
@@ -71,6 +75,8 @@ const Dashboard = () => {
     return <SupervisorDashboard />;
   } else if (userType === 'employee') {
     return <EmployeeDashboard />;
+  } else if (userType === 'moderator') {
+    return <ModeratorDashboard />;
   }
 
   // Unauthorized access page
