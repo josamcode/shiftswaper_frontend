@@ -24,6 +24,12 @@ import Swal from 'sweetalert2';
 import { useAuth } from '../auth/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
+const combineDateTime = (dateStr, timeStr) => {
+  if (!dateStr || !timeStr) return null;
+  const dateTime = new Date(`${dateStr}T${timeStr}`);
+  return isNaN(dateTime.getTime()) ? null : dateTime.toISOString();
+};
+
 const EmployeeDashboard = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -235,91 +241,91 @@ const EmployeeDashboard = () => {
 
       if (createType === 'shift') {
         endpoint = '/api/shift-swap-requests/';
-        if (!formData.reason || !formData.shiftStartDate || !formData.shiftEndDate) {
-          setError('Please fill in all required fields: Reason, Shift Start Date, and Shift End Date.');
+        if (!formData.reason || !formData.shiftDate || !formData.shiftStartTime || !formData.shiftEndTime) {
+          setError('Please fill in all required fields: Reason, Shift Date, Start Time, and End Time.');
           return;
         }
 
-        if (!isDateInRange(formData.shiftStartDate)) {
-          setError('Shift Start Date must be between tomorrow and 10 days in the future.');
+        // Combine shift date + time
+        const shiftStart = combineDateTime(formData.shiftDate, formData.shiftStartTime);
+        const shiftEnd = combineDateTime(formData.shiftDate, formData.shiftEndTime);
+
+        if (!shiftStart || !shiftEnd) {
+          setError('Invalid shift date/time.');
           return;
         }
-        if (!isDateInRange(formData.shiftEndDate)) {
-          setError('Shift End Date must be between tomorrow and 10 days in the future.');
-          return;
-        }
-        const startDate = new Date(formData.shiftStartDate);
-        const endDate = new Date(formData.shiftEndDate);
-        if (endDate <= startDate) {
-          setError('Shift End Date must be after Shift Start Date.');
+
+        if (new Date(shiftEnd) <= new Date(shiftStart)) {
+          setError('Shift End Time must be after Start Time.');
           return;
         }
 
         payload = {
           reason: formData.reason.trim(),
-          shiftStartDate: new Date(formData.shiftStartDate).toISOString(),
-          shiftEndDate: new Date(formData.shiftEndDate).toISOString(),
+          shiftStartDate: shiftStart,
+          shiftEndDate: shiftEnd,
         };
-        if (formData.overtimeStart) {
-          const overtimeStart = new Date(formData.overtimeStart);
-          if (isNaN(overtimeStart.getTime())) {
-            setError('Invalid Overtime Start time.');
-            return;
-          }
-          payload.overtimeStart = overtimeStart.toISOString();
-        }
-        if (formData.overtimeEnd) {
-          const overtimeEnd = new Date(formData.overtimeEnd);
-          if (isNaN(overtimeEnd.getTime())) {
-            setError('Invalid Overtime End time.');
-            return;
-          }
-          payload.overtimeEnd = overtimeEnd.toISOString();
-        }
 
+        // Handle overtime
+        if (formData.overtimeStartTime && formData.overtimeEndTime) {
+          const otDate = formData.overtimeDate || formData.shiftDate;
+          const otStart = combineDateTime(otDate, formData.overtimeStartTime);
+          const otEnd = combineDateTime(otDate, formData.overtimeEndTime);
+
+          if (!otStart || !otEnd || new Date(otEnd) <= new Date(otStart)) {
+            setError('Invalid overtime times.');
+            return;
+          }
+
+          payload.overtimeStart = otStart;
+          payload.overtimeEnd = otEnd;
+        }
       } else { // Day Off Swap
         endpoint = '/api/day-off-swap-requests/';
+
+        // Validate required fields
         if (!formData.originalDayOff || !formData.requestedDayOff || !formData.reason) {
           setError('Please fill in all required fields: Original Day Off, Requested Day Off, and Reason.');
           return;
         }
+
+        // ✅ Combine shift date and time
+        const shiftStartDate = combineDateTime(formData.shiftDate, formData.shiftStartTime);
+        const shiftEndDate = combineDateTime(formData.shiftDate, formData.shiftEndTime);
+
+        // ✅ Validate that both shift start and end are provided
+        if (!shiftStartDate || !shiftEndDate) {
+          setError('Shift Start and End times are required for Day Off Swap requests.');
+          return;
+        }
+
+        if (new Date(shiftEndDate) <= new Date(shiftStartDate)) {
+          setError('Shift End must be after Shift Start.');
+          return;
+        }
+
+        // ✅ Build payload
         payload = {
-          originalDayOff: new Date(formData.originalDayOff).toISOString().split('T')[0], // Send date part only
+          originalDayOff: new Date(formData.originalDayOff).toISOString().split('T')[0],
           requestedDayOff: new Date(formData.requestedDayOff).toISOString().split('T')[0],
           reason: formData.reason.trim(),
+          shiftStartDate,   // ISO string
+          shiftEndDate      // ISO string
         };
-        // Optional shift details for day off swap
-        if (formData.shiftStartDate) {
-          const shiftStart = new Date(formData.shiftStartDate);
-          if (isNaN(shiftStart.getTime())) {
-            setError('Invalid Shift Start time.');
+
+        // ✅ Optional: Add overtime if provided
+        if (formData.overtimeStartTime && formData.overtimeEndTime) {
+          const otDate = formData.overtimeDate || formData.shiftDate;
+          const overtimeStart = combineDateTime(otDate, formData.overtimeStartTime);
+          const overtimeEnd = combineDateTime(otDate, formData.overtimeEndTime);
+
+          if (!overtimeStart || !overtimeEnd || new Date(overtimeEnd) <= new Date(overtimeStart)) {
+            setError('Invalid overtime times.');
             return;
           }
-          payload.shiftStartDate = shiftStart.toISOString();
-        }
-        if (formData.shiftEndDate) {
-          const shiftEnd = new Date(formData.shiftEndDate);
-          if (isNaN(shiftEnd.getTime())) {
-            setError('Invalid Shift End time.');
-            return;
-          }
-          payload.shiftEndDate = shiftEnd.toISOString();
-        }
-        if (formData.overtimeStart) {
-          const overtimeStart = new Date(formData.overtimeStart);
-          if (isNaN(overtimeStart.getTime())) {
-            setError('Invalid Overtime Start time.');
-            return;
-          }
-          payload.overtimeStart = overtimeStart.toISOString();
-        }
-        if (formData.overtimeEnd) {
-          const overtimeEnd = new Date(formData.overtimeEnd);
-          if (isNaN(overtimeEnd.getTime())) {
-            setError('Invalid Overtime End time.');
-            return;
-          }
-          payload.overtimeEnd = overtimeEnd.toISOString();
+
+          payload.overtimeStart = overtimeStart;
+          payload.overtimeEnd = overtimeEnd;
         }
       }
 
@@ -369,13 +375,36 @@ const EmployeeDashboard = () => {
       let endpoint, payload;
       if (selectedRequest.type === 'shift') {
         endpoint = `/api/shift-swap-requests/update/${selectedRequest._id}`;
+
+        const shiftStart = combineDateTime(formData.shiftDate, formData.shiftStartTime);
+        const shiftEnd = combineDateTime(formData.shiftDate, formData.shiftEndTime);
+
+        if (!shiftStart || !shiftEnd) {
+          setError('Invalid shift date/time.');
+          return;
+        }
+
         payload = {
           reason: formData.reason,
-          shiftStartDate: formData.shiftStartDate,
-          shiftEndDate: formData.shiftEndDate,
-          overtimeStart: formData.overtimeStart || null,
-          overtimeEnd: formData.overtimeEnd || null
+          shiftStartDate: shiftStart,
+          shiftEndDate: shiftEnd,
+          overtimeStart: null,
+          overtimeEnd: null
         };
+
+        if (formData.overtimeStartTime && formData.overtimeEndTime) {
+          const otDate = formData.overtimeDate || formData.shiftDate;
+          const otStart = combineDateTime(otDate, formData.overtimeStartTime);
+          const otEnd = combineDateTime(otDate, formData.overtimeEndTime);
+
+          if (otStart && otEnd && new Date(otEnd) > new Date(otStart)) {
+            payload.overtimeStart = otStart;
+            payload.overtimeEnd = otEnd;
+          } else {
+            setError('Invalid overtime times.');
+            return;
+          }
+        }
       } else {
         // Day off requests don't have an update endpoint in the routes provided
         setError('Day off requests cannot be updated. Please delete and create a new request.');
@@ -527,13 +556,21 @@ const EmployeeDashboard = () => {
   };
 
   const openEditModal = (request, type) => {
+    const getLocalDate = (isoStr) => isoStr ? new Date(isoStr).toISOString().slice(0, 10) : '';
+    const getLocalTime = (isoStr) => isoStr ? new Date(isoStr).toISOString().slice(11, 16) : '';
+
+    const shiftStartDate = request.shiftStartDate ? new Date(request.shiftStartDate) : null;
+    const shiftDate = shiftStartDate ? shiftStartDate.toISOString().slice(0, 10) : '';
+
     setSelectedRequest({ ...request, type });
     setFormData({
       reason: request.reason || '',
-      shiftStartDate: request.shiftStartDate ? new Date(request.shiftStartDate).toISOString().slice(0, 16) : '',
-      shiftEndDate: request.shiftEndDate ? new Date(request.shiftEndDate).toISOString().slice(0, 16) : '',
-      overtimeStart: request.overtimeStart ? new Date(request.overtimeStart).toISOString().slice(0, 16) : '',
-      overtimeEnd: request.overtimeEnd ? new Date(request.overtimeEnd).toISOString().slice(0, 16) : '',
+      shiftDate,
+      shiftStartTime: getLocalTime(request.shiftStartDate),
+      shiftEndTime: getLocalTime(request.shiftEndDate),
+      overtimeDate: request.overtimeStart ? new Date(request.overtimeStart).toISOString().slice(0, 10) : '',
+      overtimeStartTime: getLocalTime(request.overtimeStart),
+      overtimeEndTime: getLocalTime(request.overtimeEnd),
       originalDayOff: request.originalDayOff ? new Date(request.originalDayOff).toISOString().slice(0, 10) : '',
       requestedDayOff: request.requestedDayOff ? new Date(request.requestedDayOff).toISOString().slice(0, 10) : ''
     });
@@ -1061,7 +1098,20 @@ const EmployeeDashboard = () => {
                       type="radio"
                       value="dayoff"
                       checked={createType === 'dayoff'}
-                      onChange={(e) => setCreateType(e.target.value)}
+                      // In your type radio buttons, add:
+                      onChange={(e) => {
+                        const type = e.target.value;
+                        setCreateType(type);
+                        if (type === 'dayoff') {
+                          setFormData({
+                            ...formData,
+                            shiftStartDate: '',
+                            shiftEndDate: '',
+                            overtimeStart: '',
+                            overtimeEnd: ''
+                          });
+                        }
+                      }}
                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                     />
                     <span className="ml-2 text-sm text-gray-900">Day Off Swap</span>
@@ -1111,61 +1161,76 @@ const EmployeeDashboard = () => {
                     </div>
                   </>
                 )}
-                {/* Shift Details */}
+                {/* Shift Details (Required) */}
                 <div>
-                  <h4 className="text-md font-medium text-gray-900 mb-3">
-                    {createType === 'shift' ? 'Shift Details *' : 'Shift Details (Optional)'}
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <h4 className="text-md font-medium text-gray-900 mb-3">Shift Details *</h4>
+                  <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Shift Start
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Shift Date *</label>
                       <input
-                        type="datetime-local"
-                        value={formData.shiftStartDate}
-                        onChange={(e) => setFormData({ ...formData, shiftStartDate: e.target.value })}
+                        type="date"
+                        value={formData.shiftDate || ''}
+                        onChange={(e) => setFormData({ ...formData, shiftDate: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Shift End
-                      </label>
-                      <input
-                        type="datetime-local"
-                        value={formData.shiftEndDate}
-                        onChange={(e) => setFormData({ ...formData, shiftEndDate: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Start Time *</label>
+                        <input
+                          type="time"
+                          value={formData.shiftStartTime || ''}
+                          onChange={(e) => setFormData({ ...formData, shiftStartTime: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">End Time *</label>
+                        <input
+                          type="time"
+                          value={formData.shiftEndTime || ''}
+                          onChange={(e) => setFormData({ ...formData, shiftEndTime: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
+
                 {/* Overtime Details */}
                 <div>
                   <h4 className="text-md font-medium text-gray-900 mb-3">Overtime (Optional)</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-4">
+                    {/* Overtime Date (same as shift date) */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Overtime Start
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Overtime Date</label>
                       <input
-                        type="datetime-local"
-                        value={formData.overtimeStart}
-                        onChange={(e) => setFormData({ ...formData, overtimeStart: e.target.value })}
+                        type="date"
+                        value={formData.overtimeDate || formData.shiftDate || ''}
+                        onChange={(e) => setFormData({ ...formData, overtimeDate: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Same as shift date if left empty"
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Overtime End
-                      </label>
-                      <input
-                        type="datetime-local"
-                        value={formData.overtimeEnd}
-                        onChange={(e) => setFormData({ ...formData, overtimeEnd: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Start Time</label>
+                        <input
+                          type="time"
+                          value={formData.overtimeStartTime || ''}
+                          onChange={(e) => setFormData({ ...formData, overtimeStartTime: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">End Time</label>
+                        <input
+                          type="time"
+                          value={formData.overtimeEndTime || ''}
+                          onChange={(e) => setFormData({ ...formData, overtimeEndTime: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1223,56 +1288,72 @@ const EmployeeDashboard = () => {
                   <>
                     <div>
                       <h4 className="text-md font-medium text-gray-900 mb-3">Shift Details *</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-4">
+                        {/* Shift Date */}
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Shift Start
-                          </label>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Shift Date *</label>
                           <input
-                            type="datetime-local"
-                            value={formData.shiftStartDate}
-                            onChange={(e) => setFormData({ ...formData, shiftStartDate: e.target.value })}
+                            type="date"
+                            value={formData.shiftDate}
+                            onChange={(e) => setFormData({ ...formData, shiftDate: e.target.value })}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                           />
                         </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Shift End
-                          </label>
-                          <input
-                            type="datetime-local"
-                            value={formData.shiftEndDate}
-                            onChange={(e) => setFormData({ ...formData, shiftEndDate: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Start Time *</label>
+                            <input
+                              type="time"
+                              value={formData.shiftStartTime}
+                              onChange={(e) => setFormData({ ...formData, shiftStartTime: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">End Time *</label>
+                            <input
+                              type="time"
+                              value={formData.shiftEndTime}
+                              onChange={(e) => setFormData({ ...formData, shiftEndTime: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
+
                     {/* Overtime Details */}
                     <div>
                       <h4 className="text-md font-medium text-gray-900 mb-3">Overtime (Optional)</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Overtime Start
-                          </label>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Overtime Date</label>
                           <input
-                            type="datetime-local"
-                            value={formData.overtimeStart}
-                            onChange={(e) => setFormData({ ...formData, overtimeStart: e.target.value })}
+                            type="date"
+                            value={formData.overtimeDate || formData.shiftDate || ''}
+                            onChange={(e) => setFormData({ ...formData, overtimeDate: e.target.value })}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                           />
                         </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Overtime End
-                          </label>
-                          <input
-                            type="datetime-local"
-                            value={formData.overtimeEnd}
-                            onChange={(e) => setFormData({ ...formData, overtimeEnd: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Start Time</label>
+                            <input
+                              type="time"
+                              value={formData.overtimeStartTime || ''}
+                              onChange={(e) => setFormData({ ...formData, overtimeStartTime: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">End Time</label>
+                            <input
+                              type="time"
+                              value={formData.overtimeEndTime || ''}
+                              onChange={(e) => setFormData({ ...formData, overtimeEndTime: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>

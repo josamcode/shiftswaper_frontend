@@ -140,7 +140,7 @@ const Footer = () => {
                 href=""
                 // target="_blank"
                 rel="noopener noreferrer"
-                className="text-secondary-400 hover:text-white text-sm transition-colors duration-200"
+                className="text-blue-400 hover:text-white text-sm transition-colors duration-200"
               >
                 Created by Gerges Samuel
               </a>
