@@ -38,7 +38,7 @@ const EmployeeVerifyOTP = () => {
     setRequestId(storedRequestId || '');
 
     // Start initial cooldown
-    setResendCooldown(120);
+    setResendCooldown(1);
     const timer = setInterval(() => {
       setResendCooldown((prev) => {
         if (prev <= 1) {
@@ -195,7 +195,7 @@ const EmployeeVerifyOTP = () => {
     if (resendCooldown > 0) return;
 
     try {
-      const response = await fetch(`${process.env.REACT_APP_URI_API_URL}/api/employee-requests/resend-request-ot`, {
+      const response = await fetch(`${process.env.REACT_APP_URI_API_URL}/api/employee-requests/resend-request-otp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -209,7 +209,7 @@ const EmployeeVerifyOTP = () => {
 
       if (response.ok && data.success) {
         // Success - start cooldown
-        setResendCooldown(120);
+        setResendCooldown(1);
         const timer = setInterval(() => {
           setResendCooldown((prev) => {
             if (prev <= 1) {

@@ -50,6 +50,7 @@ const EmployeeRegistration = () => { // Remove setCurrentPage prop
   const [loadingCompanies, setLoadingCompanies] = useState(true);
   const [companiesError, setCompaniesError] = useState('');
   const [companySearchTerm, setCompanySearchTerm] = useState('');
+  const [accountNameSearchTerm, setAccountNameSearchTerm] = useState('');
 
   // Filter companies based on search term
   const filteredCompanies = useMemo(() => {
@@ -73,6 +74,7 @@ const EmployeeRegistration = () => { // Remove setCurrentPage prop
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
+
       if (data.success && data.data) {
         setCompanies(data.data);
       } else {
@@ -230,6 +232,13 @@ const EmployeeRegistration = () => { // Remove setCurrentPage prop
     }
   };
 
+  const filteredAccountNames = useMemo(() => {
+    if (!accountNameSearchTerm) return accountNameOptions;
+    return accountNameOptions.filter(option =>
+      option.label.toLowerCase().includes(accountNameSearchTerm.toLowerCase())
+    );
+  }, [accountNameOptions, accountNameSearchTerm]);
+
   const retryFetchCompanies = () => {
     fetchCompanies();
   };
@@ -284,28 +293,74 @@ const EmployeeRegistration = () => { // Remove setCurrentPage prop
               )}
             </div>
             {/* Account Name - Changed to Select */}
-            <div>
+            <div className={`${formData.accountName ? 'mb-8' : 'mb-0'} transition-all duration-300`}>
               <label htmlFor="accountName" className="block text-sm font-medium text-gray-700 mb-1">
                 Account Name *
               </label>
               <div className="relative">
+                {/* Hidden select element for form data binding - Keep it but don't let it block interaction */}
                 <select
                   id="accountName"
                   name="accountName"
                   value={formData.accountName}
                   onChange={handleChange}
-                  disabled={isLoading}
-                  className={`w-full px-3 py-2 pr-10 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 appearance-none bg-white ${errors.accountName ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                    }`}
+                  className="sr-only" // Use screen reader only class to hide it completely from view and interaction
                 >
                   <option value="">Choose an account name</option>
-                  {accountNameOptions.map((option) => (
+                  {filteredAccountNames.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="absolute inset-y-0 right-0 h-full w-8 text-gray-400 pointer-events-none flex items-center justify-center" />
+                {/* Custom searchable select UI */}
+                <div
+                  className={`w-full px-3 py-2 border rounded-lg shadow-sm focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-colors duration-200 bg-white flex items-center justify-between ${errors.accountName ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                    } ${loadingCompanies || companies.length === 0 ? 'bg-gray-50' : ''}`}
+                >
+                  <input
+                    id="account-name-search-input"
+                    type="text"
+                    value={accountNameSearchTerm}
+                    onChange={(e) => setAccountNameSearchTerm(e.target.value)}
+                    placeholder={
+                      formData.accountName
+                        ? accountNameOptions.find(opt => opt.value === formData.accountName)?.label || 'Select account name'
+                        : 'Write your account name and choose!'
+                    }
+                    className="w-full bg-transparent border-0 focus:ring-0 focus:outline-none p-0 text-gray-900 placeholder-gray-500"
+                    disabled={loadingCompanies || isLoading || companies.length === 0}
+                  />
+                  {/* <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" /> */}
+                </div>
+                {/* Dropdown list */}
+                {accountNameSearchTerm && !loadingCompanies && accountNameOptions.length > 0 && (
+                  <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md py-1 max-h-60 overflow-auto">
+                    {filteredAccountNames.length === 0 ? (
+                      <div className="px-4 py-2 text-gray-500">No account names found</div>
+                    ) : (
+                      filteredAccountNames.map((option) => (
+                        <div
+                          key={option.value}
+                          className="px-4 py-2 hover:bg-blue-50 cursor-pointer flex items-center"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setFormData(prev => ({ ...prev, accountName: option.value }));
+                            setAccountNameSearchTerm('');
+                            if (errors.accountName) {
+                              setErrors(prev => ({ ...prev, accountName: '' }));
+                            }
+                            if (errors.submit) {
+                              setErrors(prev => ({ ...prev, submit: '' }));
+                            }
+                          }}
+                        >
+                          <span className="truncate">{option.label}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
               </div>
               {errors.accountName && (
                 <div className="flex items-center space-x-1 mt-1">
@@ -378,12 +433,12 @@ const EmployeeRegistration = () => { // Remove setCurrentPage prop
                           ? 'No companies available'
                           : formData.companyId
                             ? companies.find(c => c._id === formData.companyId)?.name || 'Select company'
-                            : 'Search and select company'
+                            : 'Write your company name and choose!'
                     }
                     className="w-full bg-transparent border-0 focus:ring-0 focus:outline-none p-0 text-gray-900 placeholder-gray-500"
                     disabled={loadingCompanies || isLoading || companies.length === 0}
                   />
-                  <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                  {/* <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" /> */}
                 </div>
 
                 {/* Dropdown list */}
@@ -408,7 +463,11 @@ const EmployeeRegistration = () => { // Remove setCurrentPage prop
                             }
                           }}
                         >
-                          <Building className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0" />
+                          <img
+                            src={`${process.env.REACT_APP_URI_API_URL}/images/companies/logos/${company.logo}`}
+                            alt={`${company.name} Logo`}
+                            className="h-8 w-8 object-contain mr-3 rounded-full"
+                          />
                           <span className="truncate">{company.name}</span>
                         </div>
                       ))
@@ -505,7 +564,7 @@ const EmployeeRegistration = () => { // Remove setCurrentPage prop
             {/* Phone Number */}
             <div>
               <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
-                Phone Number (International) *
+                Phone Number *
               </label>
               <input
                 id="phoneNumber"
@@ -515,7 +574,7 @@ const EmployeeRegistration = () => { // Remove setCurrentPage prop
                 onChange={handleChange}
                 className={`w-full px-3 py-2 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 ${errors.phoneNumber ? 'border-red-300 bg-red-50' : 'border-gray-300'
                   }`}
-                placeholder="+1 555-123-4567"
+                placeholder="+201234567890"
                 disabled={isLoading}
               />
               {errors.phoneNumber && (
@@ -525,7 +584,7 @@ const EmployeeRegistration = () => { // Remove setCurrentPage prop
                 </div>
               )}
               <p className="mt-1 text-xs text-gray-500">
-                Include country code (e.g., +971, +1, +44)
+                Include country code (e.g.,+20, +971, +1, +44)
               </p>
             </div>
             {/* Password */}
@@ -561,9 +620,15 @@ const EmployeeRegistration = () => { // Remove setCurrentPage prop
                   <p className="text-sm text-red-600">{errors.password}</p>
                 </div>
               )}
-              <p className="mt-1 text-xs text-gray-500">
-                Must be at least 6 characters long
-              </p>
+              <div className="mt-2 text-xs text-gray-500 space-y-1">
+                <p>Password must:</p>
+                <ul className="list-disc list-inside ml-1 space-y-1">
+                  <li>Be at least 6 characters long</li>
+                  <li>Include a combination of letters and numbers</li>
+                  <li>Include at least one special character (e.g., !@#$%&*)</li>
+                  <li>Include at least one uppercase letter</li>
+                </ul>
+              </div>
             </div>
           </div>
           {/* Submit Error */}

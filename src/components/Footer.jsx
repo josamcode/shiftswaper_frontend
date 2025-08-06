@@ -1,29 +1,30 @@
 import { Calendar, Phone, Mail, MapPin } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const footerLinks = {
   product: [
-    { label: 'Features', href: '#features' },
-    { label: 'Pricing', href: '#pricing' },
-    { label: 'Demo', href: '#demo' },
-    { label: 'API', href: '#api' }
+    { label: 'Features', href: 'features' },
+    // { label: 'Pricing', href: 'pricing' },
+    // { label: 'Demo', href: 'demo' },
+    // { label: 'API', href: 'api' }
   ],
   company: [
-    { label: 'About Us', href: '#about' },
-    { label: 'Careers', href: '#careers' },
-    { label: 'Press', href: '#press' },
-    { label: 'Blog', href: '#blog' }
+    { label: 'About Us', href: 'about' },
+    // { label: 'Careers', href: 'careers' },
+    // { label: 'Press', href: 'press' },
+    { label: 'Blog', href: 'blog' }
   ],
   support: [
-    { label: 'Help Center', href: '#help' },
-    { label: 'Contact', href: '#contact' },
-    { label: 'Status', href: '#status' },
-    { label: 'Updates', href: '#updates' }
+    { label: 'Help Center', href: 'mailto:gergessamuel100@gmail.com' },
+    { label: 'Contact', href: 'mailto:gergessamuel100@gmail.com' },
+    // { label: 'Status', href: 'status' },
+    // { label: 'Updates', href: 'updates' }
   ],
   legal: [
-    { label: 'Privacy Policy', href: '#privacy' },
-    { label: 'Terms of Service', href: '#terms' },
-    { label: 'Cookie Policy', href: '#cookies' },
-    { label: 'GDPR', href: '#gdpr' }
+    { label: 'Privacy Policy', href: 'privacy' },
+    { label: 'Terms of Service', href: 'terms' },
+    { label: 'Cookie Policy', href: 'cookie_policy' },
+    // { label: 'GDPR', href: 'gdpr' }
   ]
 };
 
@@ -37,7 +38,8 @@ const socialLinks = [
 const contactInfo = [
   { icon: Phone, label: '+20 (12) 1234-5678' },
   { icon: Mail, label: 'supprot@shiftswaper.com' },
-  { icon: MapPin, label: 'Egypt, Cairo' }
+  { icon: MapPin, label: 'Egypt, Cairo' },
+  { icon: MapPin, label: 'Worldwide company' }
 ];
 
 // Footer Component
@@ -72,9 +74,9 @@ const Footer = () => {
             <ul className="space-y-2">
               {footerLinks.product.map((link, index) => (
                 <li key={index}>
-                  <a href={link.href} className="text-secondary-300 hover:text-white text-sm transition-colors duration-200">
+                  <Link to={link.href} className="text-secondary-300 hover:text-white text-sm transition-colors duration-200">
                     {link.label}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -85,9 +87,9 @@ const Footer = () => {
             <ul className="space-y-2">
               {footerLinks.company.map((link, index) => (
                 <li key={index}>
-                  <a href={link.href} className="text-secondary-300 hover:text-white text-sm transition-colors duration-200">
+                  <Link to={link.href} className="text-secondary-300 hover:text-white text-sm transition-colors duration-200">
                     {link.label}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -111,9 +113,9 @@ const Footer = () => {
             <ul className="space-y-2">
               {footerLinks.legal.map((link, index) => (
                 <li key={index}>
-                  <a href={link.href} className="text-secondary-300 hover:text-white text-sm transition-colors duration-200">
+                  <Link to={link.href} className="text-secondary-300 hover:text-white text-sm transition-colors duration-200">
                     {link.label}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -136,14 +138,14 @@ const Footer = () => {
                   {social.label}
                 </a>
               ))}
-              <a
+              {/* <a
                 href=""
                 // target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-400 hover:text-white text-sm transition-colors duration-200"
               >
                 Created by Gerges Samuel
-              </a>
+              </a> */}
             </div>
           </div>
         </div>

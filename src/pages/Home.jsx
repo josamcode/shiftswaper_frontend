@@ -1,7 +1,7 @@
 import { Calendar, Users, Clock, Shield, Star, ArrowRight, CheckCircle } from 'lucide-react';
 
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { checkAuthStatus } from '../utils/checkAuthRedirect';
 
 const features = [
@@ -97,18 +97,18 @@ const Homepage = () => {
                 Create your company account, approve employees, and watch productivity soar.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <button className="bg-primary-600 hover:bg-primary-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 flex items-center justify-center group">
+                <Link to="get_started" className="bg-primary-600 hover:bg-primary-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 flex items-center justify-center group">
                   Start Free Trial
                   <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
-                </button>
-                <button className="border-2 border-primary-600 text-primary-600 hover:bg-primary-50 px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200">
-                  Watch Demo
-                </button>
+                </Link>
+                <Link to="how_it_works" className="border-2 border-primary-600 text-primary-600 hover:bg-primary-50 px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200">
+                  How it works?
+                </Link>
               </div>
               <div className="mt-8 flex items-center space-x-6 text-sm text-secondary-500">
                 <div className="flex items-center">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  <span>14-day free trial</span>
+                  <span>30-day free trial</span>
                 </div>
                 <div className="flex items-center">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
@@ -279,13 +279,13 @@ const Homepage = () => {
             Start your free trial today and experience the difference.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-white text-primary-600 hover:bg-primary-50 px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 flex items-center justify-center group">
+            <Link to="get_started" className="bg-white text-primary-600 hover:bg-primary-50 px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 flex items-center justify-center group">
               Start Free Trial
               <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
-            </button>
-            <button className="border-2 border-white text-white hover:bg-white hover:text-primary-600 px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200">
-              Schedule Demo
-            </button>
+            </Link>
+            <Link to="how_it_works" className="border-2 border-white text-white hover:bg-white hover:text-primary-600 px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200">
+              How it works?
+            </Link>
           </div>
         </div>
       </section>

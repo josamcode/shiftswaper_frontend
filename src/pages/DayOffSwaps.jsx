@@ -38,6 +38,12 @@ const DayOffSwapsPage = () => {
   const [statusFilter, setStatusFilter] = useState('available'); // available, all
   const [sortBy, setSortBy] = useState('newest'); // newest, oldest, urgent
 
+  // Date filter states
+  const [dateFilterStart, setDateFilterStart] = useState('');
+  const [dateFilterEnd, setDateFilterEnd] = useState('');
+  const [dateFilterType, setDateFilterType] = useState('requested'); // requested, original, either
+  const [showDateFilters, setShowDateFilters] = useState(false);
+
   // Modal states
   const [showViewModal, setShowViewModal] = useState(false);
   const [showMatchModal, setShowMatchModal] = useState(false);
@@ -59,7 +65,7 @@ const DayOffSwapsPage = () => {
 
   useEffect(() => {
     filterAndSortRequests();
-  }, [dayOffRequests, searchTerm, statusFilter, sortBy]);
+  }, [dayOffRequests, searchTerm, statusFilter, sortBy, dateFilterStart, dateFilterEnd, dateFilterType]);
 
   const loadEmployeeData = () => {
     try {
@@ -99,7 +105,6 @@ const DayOffSwapsPage = () => {
 
       const data = await response.json();
       if (response.ok && data.success) {
-        // Filter out own requests - employees shouldn't see their own requests here
         const otherEmployeesRequests = (data.data.requests || []).filter(
           request => request.requesterUserId?._id !== employeeData?.id
         );
@@ -121,8 +126,8 @@ const DayOffSwapsPage = () => {
     // Filter by availability
     if (statusFilter === 'available') {
       filtered = filtered.filter(req =>
-        (req.status === 'matched') &&
-        !req.receiverUserId &&
+        // Show requests that are pending (waiting for matches) OR matched but not accepted yet
+        (req.status === 'pending' || (req.status === 'matched' && !req.receiverUserId)) &&
         new Date(req.originalDayOff) > new Date() &&
         new Date(req.requestedDayOff) > new Date()
       );
@@ -134,6 +139,50 @@ const DayOffSwapsPage = () => {
         req.reason.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (req.requesterUserId?.fullName || '').toLowerCase().includes(searchTerm.toLowerCase())
       );
+    }
+
+    // Date range filter
+    if (dateFilterStart || dateFilterEnd) {
+      filtered = filtered.filter(req => {
+        const originalDayOff = new Date(req.originalDayOff);
+        const requestedDayOff = new Date(req.requestedDayOff);
+        const filterStart = dateFilterStart ? new Date(dateFilterStart) : null;
+        const filterEnd = dateFilterEnd ? new Date(dateFilterEnd + 'T23:59:59') : null;
+
+        let dateToCheck;
+        switch (dateFilterType) {
+          case 'original':
+            dateToCheck = originalDayOff;
+            break;
+          case 'requested':
+            dateToCheck = requestedDayOff;
+            break;
+          case 'either':
+            // Check if either date falls within the range
+            const checkDateInRange = (date) => {
+              if (filterStart && filterEnd) {
+                return date >= filterStart && date <= filterEnd;
+              } else if (filterStart) {
+                return date >= filterStart;
+              } else if (filterEnd) {
+                return date <= filterEnd;
+              }
+              return true;
+            };
+            return checkDateInRange(originalDayOff) || checkDateInRange(requestedDayOff);
+          default:
+            dateToCheck = requestedDayOff;
+        }
+
+        if (filterStart && filterEnd) {
+          return dateToCheck >= filterStart && dateToCheck <= filterEnd;
+        } else if (filterStart) {
+          return dateToCheck >= filterStart;
+        } else if (filterEnd) {
+          return dateToCheck <= filterEnd;
+        }
+        return true;
+      });
     }
 
     // Sort requests
@@ -150,6 +199,21 @@ const DayOffSwapsPage = () => {
     });
 
     setFilteredRequests(filtered);
+  };
+
+  const clearDateFilters = () => {
+    setDateFilterStart('');
+    setDateFilterEnd('');
+    setDateFilterType('requested');
+  };
+
+  const clearAllFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('available');
+    setSortBy('newest');
+    setDateFilterStart('');
+    setDateFilterEnd('');
+    setDateFilterType('requested');
   };
 
   const showSuccessMessage = (message) => {
@@ -375,6 +439,23 @@ const DayOffSwapsPage = () => {
     return true;
   };
 
+  const getDateFilterDescription = () => {
+    const typeText = {
+      'requested': 'requested day off',
+      'original': 'original day off',
+      'either': 'either day off'
+    }[dateFilterType];
+
+    if (dateFilterStart && dateFilterEnd) {
+      return `Showing swaps where ${typeText} is between ${new Date(dateFilterStart).toLocaleDateString()} and ${new Date(dateFilterEnd).toLocaleDateString()}`;
+    } else if (dateFilterStart) {
+      return `Showing swaps where ${typeText} is from ${new Date(dateFilterStart).toLocaleDateString()} onwards`;
+    } else if (dateFilterEnd) {
+      return `Showing swaps where ${typeText} is until ${new Date(dateFilterEnd).toLocaleDateString()}`;
+    }
+    return '';
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -435,49 +516,150 @@ const DayOffSwapsPage = () => {
 
         {/* Filters and Controls */}
         <div className="bg-white rounded-lg shadow p-4 mb-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-            <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <input
-                  type="text"
-                  placeholder="Search by reason or employee..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full sm:w-64"
-                />
+          <div className="flex flex-col space-y-4">
+            {/* First Row - Main Filters */}
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+              <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
+                {/* Search */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <input
+                    type="text"
+                    placeholder="Search by reason or employee..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full sm:w-64"
+                  />
+                </div>
+
+                {/* Status Filter */}
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="available">Available Only</option>
+                  <option value="all">All Requests</option>
+                </select>
+
+                {/* Sort By */}
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="newest">Newest First</option>
+                  <option value="oldest">Oldest First</option>
+                  <option value="urgent">Most Urgent</option>
+                </select>
+
+                {/* Date Filter Toggle */}
+                <button
+                  onClick={() => setShowDateFilters(!showDateFilters)}
+                  className={`inline-flex items-center px-3 py-2 rounded-lg transition-colors duration-200 ${showDateFilters || dateFilterStart || dateFilterEnd
+                    ? 'bg-orange-100 text-orange-700 border border-orange-300'
+                    : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200'
+                    }`}
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Date Filter
+                  {(dateFilterStart || dateFilterEnd) && (
+                    <span className="ml-2 bg-orange-500 text-white text-xs rounded-full px-2 py-0.5">
+                      Active
+                    </span>
+                  )}
+                </button>
               </div>
 
-              {/* Status Filter */}
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="available">Available Only</option>
-                <option value="all">All Requests</option>
-              </select>
+              <div className="flex items-center space-x-2">
+                {/* Clear Filters */}
+                {(searchTerm || statusFilter !== 'available' || sortBy !== 'newest' || dateFilterStart || dateFilterEnd || dateFilterType !== 'requested') && (
+                  <button
+                    onClick={clearAllFilters}
+                    className="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                  >
+                    <Filter className="h-4 w-4 mr-2" />
+                    Clear All
+                  </button>
+                )}
 
-              {/* Sort By */}
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="newest">Newest First</option>
-                <option value="oldest">Oldest First</option>
-                <option value="urgent">Most Urgent</option>
-              </select>
+                {/* Refresh */}
+                <button
+                  onClick={filterAndSortRequests}
+                  className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh
+                </button>
+              </div>
             </div>
 
-            <button
-              onClick={loadDayOffRequests}
-              className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </button>
+            {/* Second Row - Date Filters (Collapsible) */}
+            {showDateFilters && (
+              <div className="border-t pt-4">
+                <div className="flex flex-col space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="h-4 w-4 text-gray-500" />
+                    <span className="text-sm font-medium text-gray-700">Filter by date:</span>
+                  </div>
+
+                  <div className="flex flex-col lg:flex-row lg:items-center space-y-4 lg:space-y-0 lg:space-x-4">
+                    {/* Date Type Filter */}
+                    <div className="flex items-center space-x-2">
+                      <label className="text-sm text-gray-600 whitespace-nowrap">Filter by:</label>
+                      <select
+                        value={dateFilterType}
+                        onChange={(e) => setDateFilterType(e.target.value)}
+                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                      >
+                        <option value="requested">Requested Day Off</option>
+                        <option value="original">Original Day Off</option>
+                        <option value="either">Either Day Off</option>
+                      </select>
+                    </div>
+
+                    {/* Date Range */}
+                    <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                      <div className="flex items-center space-x-2">
+                        <label className="text-sm text-gray-600 whitespace-nowrap">From:</label>
+                        <input
+                          type="date"
+                          value={dateFilterStart}
+                          onChange={(e) => setDateFilterStart(e.target.value)}
+                          className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        />
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <label className="text-sm text-gray-600 whitespace-nowrap">To:</label>
+                        <input
+                          type="date"
+                          value={dateFilterEnd}
+                          onChange={(e) => setDateFilterEnd(e.target.value)}
+                          className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        />
+                      </div>
+
+                      {(dateFilterStart || dateFilterEnd) && (
+                        <button
+                          onClick={clearDateFilters}
+                          className="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-600 rounded text-sm hover:bg-gray-200 transition-colors duration-200"
+                        >
+                          <X className="h-3 w-3 mr-1" />
+                          Clear dates
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {(dateFilterStart || dateFilterEnd) && (
+                    <div className="mt-2 text-sm text-gray-600">
+                      {getDateFilterDescription()}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -600,7 +782,7 @@ const DayOffSwapsPage = () => {
                         className="inline-flex items-center px-3 py-1 bg-orange-600 text-white text-sm rounded hover:bg-orange-700 transition-colors duration-200"
                       >
                         <ArrowLeftRight className="h-3 w-3 mr-1" />
-                        Offer
+                        Swap now!
                       </button>
                     )}
                   </div>
@@ -608,7 +790,7 @@ const DayOffSwapsPage = () => {
               </div>
             </div>
           ))}
-        </div>
+        </div> 
 
         {/* Empty State */}
         {filteredRequests.length === 0 && (
@@ -621,6 +803,15 @@ const DayOffSwapsPage = () => {
                 : 'Try adjusting your search or filters to find more swaps.'
               }
             </p>
+            {(searchTerm || statusFilter !== 'available' || sortBy !== 'newest' || dateFilterStart || dateFilterEnd || dateFilterType !== 'requested') && (
+              <button
+                onClick={clearAllFilters}
+                className="mt-3 inline-flex items-center px-4 py-2 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700 transition-colors duration-200"
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                Clear all filters
+              </button>
+            )}
           </div>
         )}
       </main>

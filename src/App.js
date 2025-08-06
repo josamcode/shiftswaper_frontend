@@ -16,6 +16,11 @@ import ShiftSwapsPage from './pages/ShiftSwaps';
 import DayOffSwapsPage from './pages/DayOffSwaps';
 import ScrollToTop from './utils/ScrollToTop';
 import HowItWorks from './pages/HowItWorks';
+import About from './pages/About';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
+import CookiePolicy from './pages/CookiePolicy';
+import Features from './pages/Features';
 
 function App() {
   return (
@@ -37,6 +42,11 @@ function App() {
           <Route path="/shift_swaps" element={<ShiftSwapsPage />} />
           <Route path="/day_off_swaps" element={<DayOffSwapsPage />} />
           <Route path="/how_it_works" element={<HowItWorks />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/cookie_policy" element={<CookiePolicy />} />
+          <Route path="/features" element={<Features />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
         <Footer />

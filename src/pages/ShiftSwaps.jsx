@@ -14,7 +14,9 @@ import {
   User,
   ArrowRight,
   MessageSquare,
-  CheckCircle
+  CheckCircle,
+  Calendar,
+  Filter
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 
@@ -32,6 +34,11 @@ const ShiftSwapsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('available'); // available, all
   const [sortBy, setSortBy] = useState('newest'); // newest, oldest, urgent
+
+  // Date filter states
+  const [dateFilterStart, setDateFilterStart] = useState('');
+  const [dateFilterEnd, setDateFilterEnd] = useState('');
+  const [showDateFilters, setShowDateFilters] = useState(false);
 
   // Modal states
   const [showViewModal, setShowViewModal] = useState(false);
@@ -53,7 +60,7 @@ const ShiftSwapsPage = () => {
 
   useEffect(() => {
     filterAndSortRequests();
-  }, [shiftRequests, searchTerm, statusFilter, sortBy]);
+  }, [shiftRequests, searchTerm, statusFilter, sortBy, dateFilterStart, dateFilterEnd]);
 
   const loadEmployeeData = () => {
     try {
@@ -93,10 +100,6 @@ const ShiftSwapsPage = () => {
 
       const data = await response.json();
 
-      console.log(data);
-
-      console.log(employeeData);
-
       if (response.ok && data.success) {
         // Filter out own requests - employees shouldn't see their own requests here
         const otherEmployeesRequests = (data.data.requests || []).filter(
@@ -134,6 +137,24 @@ const ShiftSwapsPage = () => {
       );
     }
 
+    // Date range filter
+    if (dateFilterStart || dateFilterEnd) {
+      filtered = filtered.filter(req => {
+        const shiftStart = new Date(req.shiftStartDate);
+        const filterStart = dateFilterStart ? new Date(dateFilterStart) : null;
+        const filterEnd = dateFilterEnd ? new Date(dateFilterEnd + 'T23:59:59') : null;
+
+        if (filterStart && filterEnd) {
+          return shiftStart >= filterStart && shiftStart <= filterEnd;
+        } else if (filterStart) {
+          return shiftStart >= filterStart;
+        } else if (filterEnd) {
+          return shiftStart <= filterEnd;
+        }
+        return true;
+      });
+    }
+
     // Sort requests
     filtered.sort((a, b) => {
       switch (sortBy) {
@@ -148,6 +169,19 @@ const ShiftSwapsPage = () => {
     });
 
     setFilteredRequests(filtered);
+  };
+
+  const clearDateFilters = () => {
+    setDateFilterStart('');
+    setDateFilterEnd('');
+  };
+
+  const clearAllFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('available');
+    setSortBy('newest');
+    setDateFilterStart('');
+    setDateFilterEnd('');
   };
 
   const showSuccessMessage = (message) => {
@@ -176,48 +210,6 @@ const ShiftSwapsPage = () => {
     maxDate.setHours(23, 59, 59, 999);
 
     return selectedDate >= tomorrow && selectedDate <= maxDate;
-  };
-
-  const handleTakeShift = async (request) => {
-    const result = await Swal.fire({
-      title: 'Take this shift?',
-      text: `You will be taking ${request.requesterUserId?.fullName}'s shift on ${formatDate(request.shiftStartDate)}`,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonColor: '#10b981',
-      cancelButtonColor: '#6b7280',
-      confirmButtonText: 'Yes, take it!'
-    });
-
-    if (result.isConfirmed) {
-      try {
-        setActionLoading(request._id);
-        const token = Cookies.get('employee_token');
-
-        const response = await fetch(`${process.env.REACT_APP_URI_API_URL}/api/shift-swap-requests/get-the-shift`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            requestId: request._id
-          })
-        });
-
-        const data = await response.json();
-        if (response.ok && data.success) {
-          await loadShiftRequests();
-          showSuccessMessage('Shift taken successfully! Waiting for supervisor approval.');
-        } else {
-          setError(data.message || 'Failed to take shift');
-        }
-      } catch (error) {
-        setError('Failed to take shift. Please try again.');
-      } finally {
-        setActionLoading(null);
-      }
-    }
   };
 
   const handleCounterOffer = async () => {
@@ -449,49 +441,139 @@ const ShiftSwapsPage = () => {
 
         {/* Filters and Controls */}
         <div className="bg-white rounded-lg shadow p-4 mb-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-            <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <input
-                  type="text"
-                  placeholder="Search by reason or employee..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full sm:w-64"
-                />
+          <div className="flex flex-col space-y-4">
+            {/* First Row - Main Filters */}
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+              <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
+                {/* Search */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <input
+                    type="text"
+                    placeholder="Search by reason or employee..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full sm:w-64"
+                  />
+                </div>
+
+                {/* Status Filter */}
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="available">Available Only</option>
+                  <option value="all">All Requests</option>
+                </select>
+
+                {/* Sort By */}
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="newest">Newest First</option>
+                  <option value="oldest">Oldest First</option>
+                  <option value="urgent">Most Urgent</option>
+                </select>
+
+                {/* Date Filter Toggle */}
+                <button
+                  onClick={() => setShowDateFilters(!showDateFilters)}
+                  className={`inline-flex items-center px-3 py-2 rounded-lg transition-colors duration-200 ${showDateFilters || dateFilterStart || dateFilterEnd
+                    ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                    : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200'
+                    }`}
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Date Filter
+                  {(dateFilterStart || dateFilterEnd) && (
+                    <span className="ml-2 bg-blue-500 text-white text-xs rounded-full px-2 py-0.5">
+                      Active
+                    </span>
+                  )}
+                </button>
               </div>
 
-              {/* Status Filter */}
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="available">Available Only</option>
-                <option value="all">All Requests</option>
-              </select>
+              <div className="flex items-center space-x-2">
+                {/* Clear Filters */}
+                {(searchTerm || statusFilter !== 'available' || sortBy !== 'newest' || dateFilterStart || dateFilterEnd) && (
+                  <button
+                    onClick={clearAllFilters}
+                    className="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                  >
+                    <Filter className="h-4 w-4 mr-2" />
+                    Clear All
+                  </button>
+                )}
 
-              {/* Sort By */}
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="newest">Newest First</option>
-                <option value="oldest">Oldest First</option>
-                <option value="urgent">Most Urgent</option>
-              </select>
+                {/* Refresh */}
+                <button
+                  onClick={loadShiftRequests}
+                  className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh
+                </button>
+              </div>
             </div>
 
-            <button
-              onClick={loadShiftRequests}
-              className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </button>
+            {/* Second Row - Date Filters (Collapsible) */}
+            {showDateFilters && (
+              <div className="border-t pt-4">
+                <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="h-4 w-4 text-gray-500" />
+                    <span className="text-sm font-medium text-gray-700">Filter by shift date:</span>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                    <div className="flex items-center space-x-2">
+                      <label className="text-sm text-gray-600 whitespace-nowrap">From:</label>
+                      <input
+                        type="date"
+                        value={dateFilterStart}
+                        onChange={(e) => setDateFilterStart(e.target.value)}
+                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <label className="text-sm text-gray-600 whitespace-nowrap">To:</label>
+                      <input
+                        type="date"
+                        value={dateFilterEnd}
+                        onChange={(e) => setDateFilterEnd(e.target.value)}
+                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+
+                    {(dateFilterStart || dateFilterEnd) && (
+                      <button
+                        onClick={clearDateFilters}
+                        className="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-600 rounded text-sm hover:bg-gray-200 transition-colors duration-200"
+                      >
+                        <X className="h-3 w-3 mr-1" />
+                        Clear dates
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {(dateFilterStart || dateFilterEnd) && (
+                  <div className="mt-2 text-sm text-gray-600">
+                    {dateFilterStart && dateFilterEnd ? (
+                      <>Showing shifts from {new Date(dateFilterStart).toLocaleDateString()} to {new Date(dateFilterEnd).toLocaleDateString()}</>
+                    ) : dateFilterStart ? (
+                      <>Showing shifts from {new Date(dateFilterStart).toLocaleDateString()} onwards</>
+                    ) : (
+                      <>Showing shifts until {new Date(dateFilterEnd).toLocaleDateString()}</>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -590,27 +672,13 @@ const ShiftSwapsPage = () => {
                     {/* Action Buttons */}
                     {canTakeAction(request) && !hasAlreadyOffered(request) && (
                       <>
-                        {/* Take Shift */}
-                        {/* <button
-                          onClick={() => handleTakeShift(request)}
-                          disabled={actionLoading === request._id}
-                          className="inline-flex items-center px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors duration-200 disabled:opacity-50"
-                        >
-                          {actionLoading === request._id ? (
-                            <Loader className="h-3 w-3 animate-spin mr-1" />
-                          ) : (
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                          )}
-                          Take
-                        </button> */}
-
                         {/* Counter Offer */}
                         <button
                           onClick={() => openCounterOfferModal(request)}
                           className="inline-flex items-center px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors duration-200"
                         >
                           <ArrowRight className="h-3 w-3 mr-1" />
-                          Offer
+                          Swap now!
                         </button>
                       </>
                     )}
@@ -632,6 +700,15 @@ const ShiftSwapsPage = () => {
                 : 'Try adjusting your search or filters to find more shifts.'
               }
             </p>
+            {(searchTerm || statusFilter !== 'available' || sortBy !== 'newest' || dateFilterStart || dateFilterEnd) && (
+              <button
+                onClick={clearAllFilters}
+                className="mt-3 inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors duration-200"
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                Clear all filters
+              </button>
+            )}
           </div>
         )}
       </main>
@@ -785,21 +862,6 @@ const ShiftSwapsPage = () => {
                 <div className="flex justify-end space-x-3 pt-4 border-t">
                   {canTakeAction(selectedRequest) && !hasAlreadyOffered(selectedRequest) && (
                     <>
-                      {/* <button
-                        onClick={() => {
-                          setShowViewModal(false);
-                          handleTakeShift(selectedRequest);
-                        }}
-                        disabled={actionLoading === selectedRequest._id}
-                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center disabled:opacity-50"
-                      >
-                        {actionLoading === selectedRequest._id ? (
-                          <Loader className="h-4 w-4 mr-2 animate-spin" />
-                        ) : (
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                        )}
-                        Take This Shift
-                      </button> */}
                       <button
                         onClick={() => {
                           setShowViewModal(false);
@@ -819,13 +881,13 @@ const ShiftSwapsPage = () => {
         </div>
       )}
 
-      {/* Counter Offer Modal */}
+      {/* Offer Modal */}
       {showCounterOfferModal && selectedRequest && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
             <div className="mt-3">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-medium text-gray-900">Make Counter Offer</h3>
+                <h3 className="text-lg font-medium text-gray-900">Make Offer</h3>
                 <button
                   onClick={() => setShowCounterOfferModal(false)}
                   className="text-gray-400 hover:text-gray-600"
@@ -846,7 +908,7 @@ const ShiftSwapsPage = () => {
 
               <div className="space-y-4">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h4 className="font-medium text-blue-900 mb-3">Your Counter Offer</h4>
+                  <h4 className="font-medium text-blue-900 mb-3">Your Offer</h4>
                   <p className="text-sm text-blue-800 mb-4">
                     Propose your own shift times for the same day. The requester can then choose to accept your offer.
                   </p>

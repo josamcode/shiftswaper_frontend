@@ -116,6 +116,7 @@ const SupervisorDashboard = () => {
         const supervisorRequests = (data.data.requests || []).filter(request =>
           (request.firstSupervisorId?._id === supervisorData?._id ||
             request.secondSupervisorId?._id === supervisorData?._id) &&
+          request.negotiationHistory.length > 0 &&
           request.status !== 'offers_received'
         );
         setShiftRequests(supervisorRequests);

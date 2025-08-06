@@ -52,7 +52,7 @@ const registrationConfig = {
     }
   ],
   routes: {
-    'company_register': '/company_register',
+    'company-register': '/company_register',
     'company-login': '/company_login',
     'employee-register': '/employee_register',
     'employee-login': '/employee_login'

@@ -53,6 +53,22 @@ const CompanyDashboard = () => {
   const [selectedSupervisor, setSelectedSupervisor] = useState('');
   const [supervisors, setSupervisors] = useState([]);
 
+  const [employeeSearchTerm, setEmployeeSearchTerm] = useState('');
+  const [employeePositionFilter, setEmployeePositionFilter] = useState('all');
+
+  const filterEmployeeIds = () => {
+    let result = [...employeeIds];
+    if (employeeSearchTerm) {
+      const term = employeeSearchTerm.toLowerCase();
+      result = result.filter(emp =>
+        emp.name.toLowerCase().includes(term) ||
+        emp.employeeId.toLowerCase().includes(term)
+      );
+    }
+    if (employeePositionFilter !== 'all') result = result.filter(emp => emp.position === employeePositionFilter);
+    return result;
+  };
+
   // Employee IDs Management
   const [employeeIds, setEmployeeIds] = useState([]);
   const [employeeIdForm, setEmployeeIdForm] = useState({
@@ -406,7 +422,7 @@ const CompanyDashboard = () => {
 
   const renderOverview = () => (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg shadow p-6 flex items-center">
           <div className="bg-blue-100 p-3 rounded-full"><Users className="h-6 w-6 text-blue-600" /></div>
           <div className="ml-4">
@@ -435,13 +451,13 @@ const CompanyDashboard = () => {
             <p className="text-2xl font-bold text-gray-900">{dashboardStats.rejectedRequests}</p>
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-6 flex items-center">
+        {/* <div className="bg-white rounded-lg shadow p-6 flex items-center">
           <div className="bg-purple-100 p-3 rounded-full"><Building className="h-6 w-6 text-purple-600" /></div>
           <div className="ml-4">
             <p className="text-sm font-medium text-gray-600">Active Employees</p>
             <p className="text-2xl font-bold text-gray-900">{dashboardStats.totalEmployees}</p>
           </div>
-        </div>
+        </div> */}
       </div>
 
       <div className="bg-white rounded-lg shadow">
@@ -568,72 +584,94 @@ const CompanyDashboard = () => {
     </div>
   );
 
-  const renderEmployeeIds = () => (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <h2 className="text-xl font-semibold text-gray-900">Manage Employee IDs</h2>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <button
-            onClick={openUploadModal}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            <Upload className="h-4 w-4 mr-2" /> Upload Excel
-          </button>
-          <button
-            onClick={() => setActiveTab('add-id')}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-          >
-            + Add ID
-          </button>
-        </div>
-      </div>
+  const renderEmployeeIds = () => {
+    const filteredEmployeeIds = filterEmployeeIds();
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs uppercase">ID</th>
-                <th className="px-6 py-3 text-left text-xs uppercase">Name</th>
-                <th className="px-6 py-3 text-left text-xs uppercase">Position</th>
-                <th className="px-6 py-3 text-left text-xs uppercase">Created</th>
-                <th className="px-6 py-3 text-left text-xs uppercase">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {employeeIds.map((emp) => (
-                <tr key={emp._id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">{emp.employeeId}</td>
-                  <td className="px-6 py-4 text-sm text-gray-800">{emp.name}</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 text-xs rounded-full ${getPositionColor(emp.position)}`}>
-                      {emp.position.toUpperCase()}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">{formatDate(emp.createdAt)}</td>
-                  <td className="px-6 py-4 text-sm font-medium">
-                    <button
-                      onClick={() => handleDeleteEmployeeId(emp._id)}
-                      className="text-red-600 hover:text-red-800"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {employeeIds.length === 0 && (
-          <div className="text-center py-8">
-            <FileDown className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium">No employee IDs yet</h3>
-            <p className="mt-1 text-sm text-gray-500">Add IDs manually or upload an Excel file.</p>
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <h2 className="text-xl font-semibold text-gray-900">Manage Employee IDs</h2>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={openUploadModal}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              <Upload className="h-4 w-4 mr-2" /> Upload Excel
+            </button>
+            <button
+              onClick={() => setActiveTab('add-id')}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+            >
+              + Add ID
+            </button>
           </div>
-        )}
+        </div>
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <div className="flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0 p-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search..."
+                value={employeeSearchTerm}
+                onChange={(e) => setEmployeeSearchTerm(e.target.value)}
+                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <select value={employeePositionFilter} onChange={(e) => setEmployeePositionFilter(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none">
+              <option value="all">All Positions</option>
+              <option value="expert">Expert</option>
+              <option value="moderator">Moderator</option>
+              <option value="supervisor">Supervisor</option>
+              <option value="sme">SME</option>
+            </select>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs uppercase">ID</th>
+                  <th className="px-6 py-3 text-left text-xs uppercase">Name</th>
+                  <th className="px-6 py-3 text-left text-xs uppercase">Position</th>
+                  <th className="px-6 py-3 text-left text-xs uppercase">Created</th>
+                  <th className="px-6 py-3 text-left text-xs uppercase">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredEmployeeIds.map((emp) => (
+                  <tr key={emp._id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{emp.employeeId}</td>
+                    <td className="px-6 py-4 text-sm text-gray-800">{emp.name}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 text-xs rounded-full ${getPositionColor(emp.position)}`}>
+                        {emp.position.toUpperCase()}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500">{formatDate(emp.createdAt)}</td>
+                    <td className="px-6 py-4 text-sm font-medium">
+                      <button
+                        onClick={() => handleDeleteEmployeeId(emp._id)}
+                        className="text-red-600 hover:text-red-800"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {filteredEmployeeIds.length === 0 && (
+            <div className="text-center py-8">
+              <FileDown className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-medium">No employee IDs found</h3>
+              <p className="mt-1 text-sm text-gray-500">Try adjusting your search or filters.</p>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderAddIdForm = () => (
     <div className="bg-white rounded-lg shadow p-6 max-w-lg mx-auto">
@@ -717,7 +755,16 @@ const CompanyDashboard = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center">
-              <Building className="h-8 w-8 text-blue-600 mr-3" />
+              {companyData?.logo ? (
+                <img
+                  src={`${process.env.REACT_APP_URI_API_URL}/images/companies/logos/${companyData.logo}`}
+                  alt={`${companyData.name} Logo`}
+                  className="h-10 w-10 object-contain mr-3 rounded-full"
+                />
+              ) : (
+                <Building className="h-8 w-8 text-blue-600 mr-2 flex-shrink-0" />
+              )}
+
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">{companyData?.name || 'Dashboard'}</h1>
                 <p className="text-sm text-gray-500">{companyData?.email}</p>
@@ -794,11 +841,48 @@ const CompanyDashboard = () => {
       </main>
 
       {/* Upload Modal */}
+      {/* Upload Modal */}
       {uploadModalOpen && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
           <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
             <h3 className="text-lg font-medium mb-4">Upload Employee IDs (Excel)</h3>
             <p className="text-sm text-gray-600 mb-4">Columns: Employee ID, Name, Position</p>
+            <table className="min-w-full divide-y divide-gray-200 mb-4">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs uppercase">Employee ID</th>
+                  <th className="px-6 py-3 text-left text-xs uppercase">Name</th>
+                  <th className="px-6 py-3 text-left text-xs uppercase">Position</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                <tr>
+                  <td className="px-6 py-4 text-sm text-gray-800">EMP001</td>
+                  <td className="px-6 py-4 text-sm text-gray-800">Ahmed Mohamed</td>
+                  <td className="px-6 py-4 text-sm text-gray-800">expert</td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-4 text-sm text-gray-800">EMP002</td>
+                  <td className="px-6 py-4 text-sm text-gray-800">Sara Ali</td>
+                  <td className="px-6 py-4 text-sm text-gray-800">expert</td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-4 text-sm text-gray-800">EMP003</td>
+                  <td className="px-6 py-4 text-sm text-gray-800">Mohamed Essam</td>
+                  <td className="px-6 py-4 text-sm text-gray-800">supervisor</td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-4 text-sm text-gray-800">EMP004</td>
+                  <td className="px-6 py-4 text-sm text-gray-800">Mona Adel</td>
+                  <td className="px-6 py-4 text-sm text-gray-800">expert</td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-4 text-sm text-gray-800">EMP005</td>
+                  <td className="px-6 py-4 text-sm text-gray-800">Mostafa Hassan</td>
+                  <td className="px-6 py-4 text-sm text-gray-800">expert</td>
+                </tr>
+              </tbody>
+            </table>
             <input type="file" accept=".xlsx,.xls,.csv" onChange={handleFileChange} className="w-full mb-4" />
             <div className="flex justify-end space-x-3">
               <button onClick={closeUploadModal} className="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400">Cancel</button>

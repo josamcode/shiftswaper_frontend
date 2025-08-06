@@ -33,7 +33,7 @@ const CompanyVerifyOTP = () => {
       const timer = setTimeout(() => navigate('/company_register'), 3000);
       return () => clearTimeout(timer);
     } else {
-      setResendCooldown(120); // Start cooldown
+      setResendCooldown(180); // Start cooldown
     }
   }, [email, navigate]);
 
@@ -164,7 +164,7 @@ const CompanyVerifyOTP = () => {
       const data = await response.json();
 
       if (response.ok) {
-        setResendCooldown(120);
+        setResendCooldown(180);
         setAttempts(0);
         setIsLocked(false);
         setError('');

@@ -83,9 +83,14 @@ const EmployeeDashboard = () => {
 
   useEffect(() => {
     loadEmployeeData();
-    loadShiftRequests();
-    loadDayOffRequests();
   }, []);
+
+  useEffect(() => {
+    if (employeeData) {
+      loadShiftRequests();
+      loadDayOffRequests();
+    }
+  }, [employeeData]);
 
   useEffect(() => {
     filterRequests();
@@ -119,7 +124,7 @@ const EmployeeDashboard = () => {
         handleLogout();
         return;
       }
-      const response = await fetch(`${process.env.REACT_APP_URI_API_URL}/api/shift-swap-requests/my`, {
+      const response = await fetch(`${process.env.REACT_APP_URI_API_URL}/api/shift-swap-requests`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -131,7 +136,19 @@ const EmployeeDashboard = () => {
       }
       const data = await response.json();
       if (response.ok && data.success) {
-        setShiftRequests(data.data.requests || []);
+        const relevantRequests = (data.data.requests || []).filter(request => {
+          // Check if they made the request
+          const isOwnRequest = request.requesterUserId?._id === employeeData?.id;
+
+          // Check if they made any offers in negotiation history
+          const hasOfferedInNegotiation = request.negotiationHistory?.some(
+            offer => offer.offeredBy?._id === employeeData?.id
+          );
+
+          return isOwnRequest || hasOfferedInNegotiation;
+        });
+
+        setShiftRequests(relevantRequests);
       } else {
         setError(data.message || 'Failed to load shift requests');
       }
@@ -644,8 +661,6 @@ const EmployeeDashboard = () => {
   const viewRequestDetails = (request, type) => {
     setSelectedRequest({ ...request, type });
     setShowViewModal(true);
-    console.log(selectedRequest);
-
   };
 
   const canEdit = (request) => {
@@ -1199,7 +1214,7 @@ const EmployeeDashboard = () => {
 
                 {/* Overtime Details */}
                 <div>
-                  <h4 className="text-md font-medium text-gray-900 mb-3">Overtime (Optional)</h4>
+                  <h4 className="text-md font-medium text-gray-900 mb-3">Do you have Overtime? (Optional)</h4>
                   <div className="space-y-4">
                     {/* Overtime Date (same as shift date) */}
                     <div>
@@ -1234,6 +1249,20 @@ const EmployeeDashboard = () => {
                     </div>
                   </div>
                 </div>
+                {error && (
+                  <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div className="flex items-center">
+                      <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+                      <p className="text-red-600">{error}</p>
+                      <button
+                        onClick={() => setError('')}
+                        className="ml-auto text-red-500 hover:text-red-700"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
                 {/* Action Buttons */}
                 <div className="flex justify-end space-x-3 pt-4 border-t">
                   <button
@@ -1324,7 +1353,7 @@ const EmployeeDashboard = () => {
 
                     {/* Overtime Details */}
                     <div>
-                      <h4 className="text-md font-medium text-gray-900 mb-3">Overtime (Optional)</h4>
+                      <h4 className="text-md font-medium text-gray-900 mb-3">Do you have Overtime? (Optional)</h4>
                       <div className="space-y-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Overtime Date</label>
@@ -1490,7 +1519,7 @@ const EmployeeDashboard = () => {
                 {/* Offers/Matches Section */}
                 {selectedRequest.type === 'shift' && selectedRequest.negotiationHistory && selectedRequest.negotiationHistory.length > 0 && (
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <h4 className="font-medium text-green-900 mb-3">Counter Offers ({selectedRequest.negotiationHistory.length})</h4>
+                    <h4 className="font-medium text-green-900 mb-3">Offers ({selectedRequest.negotiationHistory.length})</h4>
                     <div className="space-y-3">
                       {selectedRequest.negotiationHistory.map((offer, index) => (
                         <div key={index} className="bg-white rounded p-3 border border-green-200">
