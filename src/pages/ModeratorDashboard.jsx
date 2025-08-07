@@ -2,14 +2,9 @@ import React, { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
 import {
   User,
-  Clock,
   Calendar,
   RefreshCw,
-  Plus,
   Eye,
-  Edit,
-  Trash2,
-  Check,
   X,
   LogOut,
   ChevronDown,
@@ -29,9 +24,8 @@ const ModeratorDashboard = () => {
   const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState('');
+  const [activeTab, setActiveTab] = useState('overview');
   const [moderatorData, setModeratorData] = useState(null);
-  const [actionLoading, setActionLoading] = useState(null);
   // Request states
   const [shiftRequests, setShiftRequests] = useState([]);
   const [dayOffRequests, setDayOffRequests] = useState([]);
@@ -158,9 +152,9 @@ const ModeratorDashboard = () => {
         showConfirmButton: false
       }).then(() => {
         if (navigate) {
-          navigate('/moderator_login');
+          navigate('/');
         } else {
-          window.location.href = '/moderator_login';
+          window.location.href = '/';
         }
       });
     }
@@ -208,8 +202,8 @@ const ModeratorDashboard = () => {
   const renderOverview = () => (
     <div className="space-y-6">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg shadow p-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
+        <div className="bg-white rounded-lg shadow p-6 w-full">
           <div className="flex items-center">
             <div className="bg-purple-100 p-3 rounded-full">
               <Zap className="h-6 w-6 text-purple-600" />
@@ -220,7 +214,7 @@ const ModeratorDashboard = () => {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-lg shadow p-6 w-full">
           <div className="flex items-center">
             <div className="bg-orange-100 p-3 rounded-full">
               <CalendarDays className="h-6 w-6 text-orange-600" />

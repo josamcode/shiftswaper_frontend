@@ -19,7 +19,8 @@ export const AuthProvider = ({ children }) => {
     const companyToken = Cookies.get('company_token');
     const employeeToken = Cookies.get('employee_token');
     const supervisorToken = Cookies.get('supervisor_token');
-    setIsLoggedIn(!!(companyToken || employeeToken || supervisorToken));
+    const moderatorToken = Cookies.get('moderator_token');
+    setIsLoggedIn(!!(companyToken || employeeToken || supervisorToken || moderatorToken));
     setLoading(false);
   };
 
@@ -49,6 +50,8 @@ export const AuthProvider = ({ children }) => {
     Cookies.remove('company_data');
     Cookies.remove('supervisor_data');
     Cookies.remove('supervisor_token');
+    Cookies.remove('moderator_token');
+    Cookies.remove('moderator_data');
     setIsLoggedIn(false);
   };
 

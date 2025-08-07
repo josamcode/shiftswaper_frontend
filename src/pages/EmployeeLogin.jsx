@@ -164,8 +164,8 @@ const EmployeeLogin = () => {
   };
 
   const handleForgotPassword = () => {
-    // this would navigate to forgot password page
-    alert('Forgot password functionality would be implemented here. Please contact your company administrator for password reset assistance.');
+    // Navigate to forgot password page
+    navigate('/forgot-password');
   };
 
   const handleKeyPress = (e) => {

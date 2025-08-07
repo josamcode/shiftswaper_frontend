@@ -293,9 +293,9 @@ const SupervisorDashboard = () => {
         showConfirmButton: false
       }).then(() => {
         if (navigate) {
-          navigate('/supervisor_login');
+          navigate('/');
         } else {
-          window.location.href = '/supervisor_login';
+          window.location.href = '/';
         }
       });
     }

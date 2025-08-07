@@ -21,6 +21,8 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import CookiePolicy from './pages/CookiePolicy';
 import Features from './pages/Features';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 function App() {
   return (
@@ -34,6 +36,8 @@ function App() {
           <Route path="/company_register" element={<CompanyRegistration />} />
           <Route path="/company_verify_otp" element={<CompanyVerifyOTP />} />
           <Route path="/company_login" element={<CompanyLogin />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/employee_register" element={<EmployeeRegistration />} />
           <Route path="/employee_verify_otp" element={<EmployeeVerifyOTP />} />
           <Route path="/employee_login" element={<EmployeeLogin />} />
