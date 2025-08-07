@@ -1,0 +1,68 @@
+# Robots.txt for Shiftswaper
+# This file controls how search engines crawl and index the site
+
+# Allow all web crawlers to access public marketing pages
+User-agent: *
+
+# Allow indexing of public marketing and informational pages
+Allow: /
+Allow: /home
+Allow: /how_it_works
+Allow: /about
+Allow: /privacy
+Allow: /terms
+Allow: /cookie_policy
+Allow: /features
+
+# Disallow indexing of authentication pages
+Disallow: /company_register
+Disallow: /company_verify_otp
+Disallow: /company_login
+Disallow: /employee_register
+Disallow: /employee_verify_otp
+Disallow: /employee_login
+Disallow: /get_started
+Disallow: /forgot-password
+Disallow: /reset-password
+
+# Disallow indexing of protected user areas
+Disallow: /dashboard
+Disallow: /shift_swaps
+Disallow: /day_off_swaps
+
+# Disallow common sensitive directories and files
+Disallow: /api/
+Disallow: /admin/
+Disallow: /login/
+Disallow: /register/
+Disallow: /_next/
+Disallow: /static/
+Disallow: /assets/
+Disallow: /*.json$
+Disallow: /*.js$
+Disallow: /*.css$
+Disallow: /*.map$
+
+# Disallow temporary and development files
+Disallow: /temp/
+Disallow: /tmp/
+Disallow: /dev/
+Disallow: /test/
+Disallow: /staging/
+
+# Set crawl delay (optional - adjust based on server capacity)
+Crawl-delay: 1
+
+# Sitemap location (update with your actual sitemap URL)
+Sitemap: https://Shiftswaper.com/sitemap.xml
+
+# Additional rules for specific bots if needed
+# User-agent: Googlebot
+# Allow: /
+
+# Block aggressive crawlers if necessary
+# User-agent: AhrefsBot
+# Disallow: /
+
+# User-agent: MJ12bot
+# Disallow: /
