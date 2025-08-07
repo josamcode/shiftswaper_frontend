@@ -672,7 +672,7 @@ const ShiftSwapsPage = () => {
                     {/* Action Buttons */}
                     {canTakeAction(request) && !hasAlreadyOffered(request) && (
                       <>
-                        {/* Counter Offer */}
+                        {/* Offer */}
                         <button
                           onClick={() => openCounterOfferModal(request)}
                           className="inline-flex items-center px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors duration-200"
