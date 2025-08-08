@@ -31,6 +31,7 @@ const EmployeeRegistration = () => { // Remove setCurrentPage prop
     email: '',
     position: '',
     password: '',
+    confirmPassword: '',
     companyId: '',
     employeeId: '',
     phoneNumber: ''
@@ -132,6 +133,11 @@ const EmployeeRegistration = () => { // Remove setCurrentPage prop
       newErrors.password = 'Password is required';
     } else if (formData.password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters';
+    }
+    if (!formData.confirmPassword.trim()) {
+      newErrors.confirmPassword = 'Please confirm your password';
+    } else if (formData.confirmPassword !== formData.password) {
+      newErrors.confirmPassword = 'Passwords do not match';
     }
     if (!formData.companyId) {
       newErrors.companyId = 'Company selection is required';
@@ -629,6 +635,40 @@ const EmployeeRegistration = () => { // Remove setCurrentPage prop
                   <li>Include at least one uppercase letter</li>
                 </ul>
               </div>
+            </div>
+            {/* Confirm Password */}
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                Confirm Password *
+              </label>
+              <div className="relative">
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  className={`w-full px-3 py-2 pr-10 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 ${errors.confirmPassword ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                    }`}
+                  placeholder="Confirm your password"
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                  disabled={isLoading}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {errors.confirmPassword && (
+                <div className="flex items-center space-x-1 mt-1">
+                  <AlertCircle className="h-4 w-4 text-red-500" />
+                  <p className="text-sm text-red-600">{errors.confirmPassword}</p>
+                </div>
+              )}
             </div>
           </div>
           {/* Submit Error */}

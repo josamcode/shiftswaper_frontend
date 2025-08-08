@@ -27,16 +27,10 @@ import {
   ArrowLeftRight,
   Plus
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const About = () => {
   const [activeStatsTab, setActiveStatsTab] = useState('overview');
-
-  const stats = [
-    { label: 'Active Companies', value: '500+', icon: Building2, color: 'text-blue-600' },
-    { label: 'Happy Employees', value: '15,000+', icon: Users, color: 'text-green-600' },
-    { label: 'Shifts Swapped', value: '50,000+', icon: Clock, color: 'text-purple-600' },
-    { label: 'Hours Saved Monthly', value: '25,000+', icon: TrendingUp, color: 'text-orange-600' }
-  ];
 
   const features = [
     {
@@ -57,7 +51,7 @@ const About = () => {
     {
       icon: Bell,
       title: 'Real-Time Notifications',
-      description: 'Instant email notifications keep everyone informed throughout the swap process.'
+      description: 'Instant email and in-app notifications keep everyone informed throughout the swap process.'
     },
     {
       icon: Search,
@@ -121,42 +115,6 @@ const About = () => {
     }
   ];
 
-  const testimonials = [
-    {
-      name: 'Rachel Martinez',
-      role: 'Operations Manager',
-      company: 'HealthCare Plus',
-      content: 'Shiftswaper has revolutionized how we manage our nursing schedules. The flexibility it provides to our staff while maintaining coverage is incredible.',
-      rating: 5,
-      image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=60&h=60&fit=crop&crop=face'
-    },
-    {
-      name: 'James Wilson',
-      role: 'Store Manager',
-      company: 'RetailMax',
-      content: 'Our employee satisfaction has increased dramatically. The easy swap system means fewer last-minute staffing issues and happier employees.',
-      rating: 5,
-      image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=60&h=60&fit=crop&crop=face'
-    },
-    {
-      name: 'Lisa Thompson',
-      role: 'HR Director',
-      company: 'Manufacturing Corp',
-      content: 'The supervisor approval system gives us the control we need while empowering our workforce. It\'s the perfect balance.',
-      rating: 5,
-      image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=60&h=60&fit=crop&crop=face'
-    }
-  ];
-
-  const milestones = [
-    { year: '2020', event: 'Company Founded', description: 'Started with a simple idea to make shift swapping easier' },
-    { year: '2021', event: 'First 100 Companies', description: 'Reached our first major milestone with diverse industry adoption' },
-    { year: '2022', event: 'Advanced Features Launch', description: 'Introduced day-off swapping and multi-supervisor approval' },
-    { year: '2023', event: '10,000+ Employees', description: 'Platform scaled to serve over 10,000 active employees' },
-    { year: '2024', event: 'Enterprise Expansion', description: 'Launched enterprise features and advanced analytics' },
-    { year: '2025', event: 'Global Reach', description: 'Serving companies worldwide with 24/7 support' }
-  ];
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
@@ -173,43 +131,14 @@ const About = () => {
               Empowering businesses and employees with intelligent shift management solutions that make scheduling flexible, efficient, and stress-free.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="bg-primary-600 hover:bg-primary-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 flex items-center justify-center group">
-                Start Your Journey
+              <Link to="/get_started" className="bg-primary-600 hover:bg-primary-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 flex items-center justify-center group">
+                Sign Up Today
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
-              </button>
-              <button className="border-2 border-primary-600 text-primary-600 hover:bg-primary-50 px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200">
-                Contact Our Team
-              </button>
+              </Link>
+              <Link to="/how_it_works" className="border-2 border-primary-600 text-primary-600 hover:bg-primary-50 px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200">
+                Learn More
+              </Link>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Stats Section */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl lg:text-4xl font-heading font-bold text-secondary-900 mb-4">
-              Trusted by Thousands
-            </h2>
-            <p className="text-xl text-secondary-600">
-              Our platform is making a real difference in workplaces around the world
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center group hover:transform hover:scale-105 transition-transform duration-200">
-                <div className="bg-gray-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-primary-50 transition-colors duration-200">
-                  <stat.icon className={`h-10 w-10 ${stat.color} group-hover:text-primary-600 transition-colors duration-200`} />
-                </div>
-                <h3 className="text-3xl lg:text-4xl font-heading font-bold text-secondary-900 mb-2">
-                  {stat.value}
-                </h3>
-                <p className="text-secondary-600 font-medium">
-                  {stat.label}
-                </p>
-              </div>
-            ))}
           </div>
         </div>
       </section>
@@ -292,43 +221,6 @@ const About = () => {
         </div>
       </section>
 
-      {/* Journey/Timeline Section */}
-      <section className="py-20 bg-secondary-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-heading font-bold text-secondary-900 mb-4">
-              Our Journey
-            </h2>
-            <p className="text-xl text-secondary-600">
-              From startup to industry leader – here's how we've grown
-            </p>
-          </div>
-          <div className="relative">
-            <div className="absolute left-4 md:left-1/2 md:transform md:-translate-x-1/2 top-0 bottom-0 w-0.5 bg-primary-200"></div>
-            <div className="space-y-12">
-              {milestones.map((milestone, index) => (
-                <div key={index} className={`relative flex items-center ${index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'}`}>
-                  <div className="absolute left-4 md:left-1/2 md:transform md:-translate-x-1/2 w-3 h-3 bg-primary-600 rounded-full border-4 border-white shadow-md"></div>
-                  <div className={`bg-white rounded-lg shadow-md p-6 ml-12 md:ml-0 md:w-5/12 ${index % 2 === 0 ? 'md:mr-auto md:text-right' : 'md:ml-auto md:text-left'}`}>
-                    <div className="flex items-center space-x-2 mb-2">
-                      <span className="bg-primary-100 text-primary-800 px-3 py-1 rounded-full text-sm font-bold">
-                        {milestone.year}
-                      </span>
-                    </div>
-                    <h3 className="text-lg font-semibold text-secondary-900 mb-2">
-                      {milestone.event}
-                    </h3>
-                    <p className="text-secondary-600">
-                      {milestone.description}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Team Section */}
       {/* <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -366,49 +258,6 @@ const About = () => {
         </div>
       </section> */}
 
-      {/* Testimonials Section */}
-      {/* <section className="py-20 bg-primary-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-heading font-bold text-secondary-900 mb-4">
-              What Our Customers Say
-            </h2>
-            <p className="text-xl text-secondary-600">
-              Real feedback from real businesses using Shiftswaper
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow duration-200">
-                <div className="flex items-center mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="h-5 w-5 text-yellow-400 fill-current" />
-                  ))}
-                </div>
-                <p className="text-secondary-700 mb-6 leading-relaxed italic">
-                  "{testimonial.content}"
-                </p>
-                <div className="flex items-center space-x-3">
-                  <img
-                    src={testimonial.image}
-                    alt={testimonial.name}
-                    className="w-12 h-12 rounded-full object-cover"
-                  />
-                  <div>
-                    <p className="font-heading font-semibold text-secondary-900">
-                      {testimonial.name}
-                    </p>
-                    <p className="text-secondary-600 text-sm">
-                      {testimonial.role}, {testimonial.company}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section> */}
-
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-r from-primary-600 to-primary-700">
         <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
@@ -416,17 +265,17 @@ const About = () => {
             Ready to Transform Your Workplace?
           </h2>
           <p className="text-xl text-primary-100 mb-8 leading-relaxed">
-            Join thousands of businesses that have already revolutionized their shift management with Shiftswaper. Start your free trial today and experience the difference.
+            Be among the first to experience Shiftswaper. Sign up now and join our growing community of businesses that are revolutionizing their shift management.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-            <button className="bg-white text-primary-600 hover:bg-primary-50 px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 flex items-center justify-center group">
-              Start Free Trial
+            <Link to="/get_started" className="bg-white text-primary-600 hover:bg-primary-50 px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 flex items-center justify-center group">
+              Sign Up Today
               <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
-            </button>
-            <button className="border-2 border-white text-white hover:bg-white hover:text-primary-600 px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 flex items-center justify-center group">
+            </Link>
+            <a href='mailto:shiftswaper@gmail.com' className="border-2 border-white text-white hover:bg-white hover:text-primary-600 px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 flex items-center justify-center group">
               <MessageCircle className="h-5 w-5 mr-2" />
-              Contact Sales
-            </button>
+              Contact Us
+            </a>
           </div>
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center text-primary-100 text-sm">
             <div className="flex items-center">

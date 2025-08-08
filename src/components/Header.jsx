@@ -5,8 +5,8 @@ import { useAuth } from '../auth/AuthContext';
 
 // Data arrays for dynamic content
 const navigationLinks = [
-  { label: 'Shifts', href: '/shift_swaps' },
-  { label: 'Days off', href: '/day_off_swaps' },
+  { label: 'Available Shifts', href: '/shift_swaps' },
+  { label: 'Available Days off', href: '/day_off_swaps' },
   { label: 'How It Works?', href: '/how_it_works' },
   { label: 'About', href: '/about' },
 ];
