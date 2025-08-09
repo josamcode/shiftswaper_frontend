@@ -139,8 +139,8 @@ const Footer = () => {
                 </a>
               ))}
               {/* <a
-                href=""
-                // target="_blank"
+                href="https://josam-portfolio.vercel.app/"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-400 hover:text-white text-sm transition-colors duration-200"
               >

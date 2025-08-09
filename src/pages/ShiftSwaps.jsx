@@ -24,7 +24,6 @@ const ShiftSwapsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [employeeData, setEmployeeData] = useState(null);
-  const [actionLoading, setActionLoading] = useState(null);
 
   // Request states
   const [shiftRequests, setShiftRequests] = useState([]);
@@ -64,7 +63,7 @@ const ShiftSwapsPage = () => {
 
   const loadEmployeeData = () => {
     try {
-      const storedEmployeeData = Cookies.get('employee_data');
+      const storedEmployeeData = Cookies.get('employee_data') || Cookies.get('supervisor_data') || Cookies.get('sme_data');
       if (storedEmployeeData) {
         const parsedData = JSON.parse(storedEmployeeData);
         if (parsedData && parsedData.id && !parsedData._id) {
@@ -80,8 +79,24 @@ const ShiftSwapsPage = () => {
   const loadShiftRequests = async () => {
     try {
       setIsLoading(true);
-      const token = Cookies.get('employee_token');
-      if (!token) {
+      const employeeToken = Cookies.get('employee_token');
+      const supervisorToken = Cookies.get('supervisor_token');
+      const smeToken = Cookies.get('sme_token');
+
+      let token = null;
+      let userRole = null;
+
+      if (supervisorToken) {
+        token = supervisorToken;
+        userRole = 'supervisor';
+      } else if (employeeToken) {
+        token = employeeToken;
+        userRole = 'employee';
+      } else if (smeToken) {
+        token = smeToken;
+        userRole = 'employee';
+      } else {
+        // No valid token found
         setError('Authentication required, You have to login as Employee');
         return;
       }
