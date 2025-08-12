@@ -39,6 +39,8 @@ const EmployeeDashboard = () => {
   const [employeeData, setEmployeeData] = useState(null);
   const [actionLoading, setActionLoading] = useState(null);
 
+  const [showOvertimeFields, setShowOvertimeFields] = useState(false);
+
   // Request states
   const [shiftRequests, setShiftRequests] = useState([]);
   const [dayOffRequests, setDayOffRequests] = useState([]);
@@ -74,6 +76,8 @@ const EmployeeDashboard = () => {
     reason: '',
     shiftStartDate: '',
     shiftEndDate: '',
+    desiredShiftStartDate: '',
+    desiredShiftEndDate: '',
     overtimeStart: '',
     overtimeEnd: '',
     originalDayOff: '',
@@ -258,17 +262,19 @@ const EmployeeDashboard = () => {
 
       if (createType === 'shift') {
         endpoint = '/api/shift-swap-requests/';
-        if (!formData.reason || !formData.shiftDate || !formData.shiftStartTime || !formData.shiftEndTime) {
-          setError('Please fill in all required fields: Reason, Shift Date, Start Time, and End Time.');
+        if (!formData.reason || !formData.shiftDate || !formData.shiftStartTime || !formData.shiftEndTime || !formData.desiredShiftDate || !formData.desiredShiftStartTime || !formData.desiredShiftEndTime) {
+          setError('Please fill in all required fields: Reason, Shift Date, Start Time, End Time, Desired Shift Date, Desired Start Time, and Desired End Time.');
           return;
         }
 
         // Combine shift date + time
         const shiftStart = combineDateTime(formData.shiftDate, formData.shiftStartTime);
         const shiftEnd = combineDateTime(formData.shiftDate, formData.shiftEndTime);
+        const desiredShiftStart = combineDateTime(formData.desiredShiftDate, formData.desiredShiftStartTime);
+        const desiredShiftEnd = combineDateTime(formData.desiredShiftDate, formData.desiredShiftEndTime);
 
-        if (!shiftStart || !shiftEnd) {
-          setError('Invalid shift date/time.');
+        if (!shiftStart || !shiftEnd || !desiredShiftStart || !desiredShiftEnd) {
+          setError('Invalid shift date/time or desired shift date/time.');
           return;
         }
 
@@ -277,10 +283,17 @@ const EmployeeDashboard = () => {
           return;
         }
 
+        if (new Date(desiredShiftEnd) <= new Date(desiredShiftStart)) {
+          setError('Desired Shift End Time must be after Desired Shift Start Time.');
+          return;
+        }
+
         payload = {
           reason: formData.reason.trim(),
           shiftStartDate: shiftStart,
           shiftEndDate: shiftEnd,
+          desiredShiftStartDate: desiredShiftStart,
+          desiredShiftEndDate: desiredShiftEnd,
         };
 
         // Handle overtime
@@ -362,6 +375,8 @@ const EmployeeDashboard = () => {
           reason: '',
           shiftStartDate: '',
           shiftEndDate: '',
+          desiredShiftStartDate: '',
+          desiredShiftEndDate: '',
           overtimeStart: '',
           overtimeEnd: '',
           originalDayOff: '',
@@ -395,9 +410,11 @@ const EmployeeDashboard = () => {
 
         const shiftStart = combineDateTime(formData.shiftDate, formData.shiftStartTime);
         const shiftEnd = combineDateTime(formData.shiftDate, formData.shiftEndTime);
+        const desiredShiftStart = combineDateTime(formData.desiredShiftDate, formData.desiredShiftStartTime);
+        const desiredShiftEnd = combineDateTime(formData.desiredShiftDate, formData.desiredShiftEndTime);
 
-        if (!shiftStart || !shiftEnd) {
-          setError('Invalid shift date/time.');
+        if (!shiftStart || !shiftEnd || !desiredShiftStart || !desiredShiftEnd) {
+          setError('Invalid shift date/time or desired shift date/time.');
           return;
         }
 
@@ -405,6 +422,8 @@ const EmployeeDashboard = () => {
           reason: formData.reason,
           shiftStartDate: shiftStart,
           shiftEndDate: shiftEnd,
+          desiredShiftStartDate: desiredShiftStart,
+          desiredShiftEndDate: desiredShiftEnd,
           overtimeStart: null,
           overtimeEnd: null
         };
@@ -585,6 +604,9 @@ const EmployeeDashboard = () => {
       shiftDate,
       shiftStartTime: getLocalTime(request.shiftStartDate),
       shiftEndTime: getLocalTime(request.shiftEndDate),
+      desiredShiftDate: request.desiredShiftStartDate ? new Date(request.desiredShiftStartDate).toISOString().slice(0, 10) : '',
+      desiredShiftStartTime: getLocalTime(request.desiredShiftStartDate),
+      desiredShiftEndTime: getLocalTime(request.desiredShiftEndDate),
       overtimeDate: request.overtimeStart ? new Date(request.overtimeStart).toISOString().slice(0, 10) : '',
       overtimeStartTime: getLocalTime(request.overtimeStart),
       overtimeEndTime: getLocalTime(request.overtimeEnd),
@@ -1212,42 +1234,106 @@ const EmployeeDashboard = () => {
                   </div>
                 </div>
 
-                {/* Overtime Details */}
-                <div>
-                  <h4 className="text-md font-medium text-gray-900 mb-3">Do you have Overtime? (Optional)</h4>
-                  <div className="space-y-4">
-                    {/* Overtime Date (same as shift date) */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Overtime Date</label>
-                      <input
-                        type="date"
-                        value={formData.overtimeDate || formData.shiftDate || ''}
-                        onChange={(e) => setFormData({ ...formData, overtimeDate: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Same as shift date if left empty"
-                      />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Desired Shift Details (Required for Shift Swap) */}
+                {createType === 'shift' && (
+                  <div>
+                    <h4 className="text-md font-medium text-gray-900 mb-3">Desired Shift Details *</h4>
+                    <div className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Start Time</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Desired Shift Date *</label>
                         <input
-                          type="time"
-                          value={formData.overtimeStartTime || ''}
-                          onChange={(e) => setFormData({ ...formData, overtimeStartTime: e.target.value })}
+                          type="date"
+                          value={formData.desiredShiftDate || ''}
+                          onChange={(e) => setFormData({ ...formData, desiredShiftDate: e.target.value })}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         />
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">End Time</label>
-                        <input
-                          type="time"
-                          value={formData.overtimeEndTime || ''}
-                          onChange={(e) => setFormData({ ...formData, overtimeEndTime: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Desired Start Time *</label>
+                          <input
+                            type="time"
+                            value={formData.desiredShiftStartTime || ''}
+                            onChange={(e) => setFormData({ ...formData, desiredShiftStartTime: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Desired End Time *</label>
+                          <input
+                            type="time"
+                            value={formData.desiredShiftEndTime || ''}
+                            onChange={(e) => setFormData({ ...formData, desiredShiftEndTime: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
+                )}
+
+                {/* Overtime Details */}
+                <div>
+                  <div className="flex items-center mb-4">
+                    <input
+                      type="checkbox"
+                      id="showOvertime"
+                      checked={showOvertimeFields}
+                      onChange={(e) => {
+                        const showFields = e.target.checked;
+                        setShowOvertimeFields(showFields);
+                        // Clear overtime data when unchecked
+                        if (!showFields) {
+                          setFormData({
+                            ...formData,
+                            overtimeDate: '',
+                            overtimeStartTime: '',
+                            overtimeEndTime: ''
+                          });
+                        }
+                      }}
+                      className="h-4 w-4 cursor-pointer text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="showOvertime" className="ml-2 cursor-pointer text-md font-medium text-gray-900">
+                      Do you have Overtime?
+                    </label>
+                  </div>
+
+                  {showOvertimeFields && (
+                    <div className="space-y-4 ml-6">
+                      {/* Overtime Date (same as shift date) */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Overtime Date</label>
+                        <input
+                          type="date"
+                          value={formData.overtimeDate || formData.shiftDate || ''}
+                          onChange={(e) => setFormData({ ...formData, overtimeDate: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Same as shift date if left empty"
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Start Time</label>
+                          <input
+                            type="time"
+                            value={formData.overtimeStartTime || ''}
+                            onChange={(e) => setFormData({ ...formData, overtimeStartTime: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">End Time</label>
+                          <input
+                            type="time"
+                            value={formData.overtimeEndTime || ''}
+                            onChange={(e) => setFormData({ ...formData, overtimeEndTime: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 {error && (
                   <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
@@ -1344,6 +1430,42 @@ const EmployeeDashboard = () => {
                               type="time"
                               value={formData.shiftEndTime}
                               onChange={(e) => setFormData({ ...formData, shiftEndTime: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Desired Shift Details */}
+                    <div>
+                      <h4 className="text-md font-medium text-gray-900 mb-3">Desired Shift Details *</h4>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Desired Shift Date *</label>
+                          <input
+                            type="date"
+                            value={formData.desiredShiftDate}
+                            onChange={(e) => setFormData({ ...formData, desiredShiftDate: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Desired Start Time *</label>
+                            <input
+                              type="time"
+                              value={formData.desiredShiftStartTime}
+                              onChange={(e) => setFormData({ ...formData, desiredShiftStartTime: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Desired End Time *</label>
+                            <input
+                              type="time"
+                              value={formData.desiredShiftEndTime}
+                              onChange={(e) => setFormData({ ...formData, desiredShiftEndTime: e.target.value })}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />
                           </div>
@@ -1491,6 +1613,26 @@ const EmployeeDashboard = () => {
                         <div>
                           <label className="block text-sm font-medium text-purple-700">Shift End</label>
                           <p className="text-sm text-purple-900">{formatDate(selectedRequest.shiftEndDate)}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {/* Desired Shift Details */}
+                {(selectedRequest.desiredShiftStartDate || selectedRequest.desiredShiftEndDate) && (
+                  <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                    <h4 className="font-medium text-indigo-900 mb-3">Desired Shift Details</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {selectedRequest.desiredShiftStartDate && (
+                        <div>
+                          <label className="block text-sm font-medium text-indigo-700">Desired Shift Start</label>
+                          <p className="text-sm text-indigo-900">{formatDate(selectedRequest.desiredShiftStartDate)}</p>
+                        </div>
+                      )}
+                      {selectedRequest.desiredShiftEndDate && (
+                        <div>
+                          <label className="block text-sm font-medium text-indigo-700">Desired Shift End</label>
+                          <p className="text-sm text-indigo-900">{formatDate(selectedRequest.desiredShiftEndDate)}</p>
                         </div>
                       )}
                     </div>

@@ -641,6 +641,10 @@ const ShiftSwapsPage = () => {
                         <Clock className="h-3 w-3 mr-1" />
                         <span>{formatDate(request.shiftStartDate)} - {formatDate(request.shiftEndDate)}</span>
                       </div>
+                      <div className="flex items-center text-xs text-gray-600">
+                        <Clock className="h-3 w-3 mr-1" />
+                        <span>Desired: {formatDate(request.desiredShiftStartDate)} - {formatDate(request.desiredShiftEndDate)}</span>
+                      </div>
                       {request.overtimeStart && (
                         <div className="flex items-center text-xs text-gray-600">
                           <Plus className="h-3 w-3 mr-1" />
@@ -917,6 +921,7 @@ const ShiftSwapsPage = () => {
                 <div className="text-sm text-gray-600">
                   <p><strong>From:</strong> {selectedRequest.requesterUserId?.fullName}</p>
                   <p><strong>Shift:</strong> {formatDate(selectedRequest.shiftStartDate)} - {formatDate(selectedRequest.shiftEndDate)}</p>
+                  <p><strong>Desired:</strong> {formatDate(selectedRequest.desiredShiftStartDate)} - {formatDate(selectedRequest.desiredShiftEndDate)}</p>
                   <p><strong>Reason:</strong> {selectedRequest.reason}</p>
                 </div>
               </div>
@@ -993,6 +998,21 @@ const ShiftSwapsPage = () => {
                     <li>• Shifts must be scheduled between tomorrow and 10 days in the future</li>
                   </ul>
                 </div>
+
+                {error && (
+                  <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div className="flex items-center">
+                      <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+                      <p className="text-red-600">{error}</p>
+                      <button
+                        onClick={() => setError('')}
+                        className="ml-auto text-red-500 hover:text-red-700"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Action Buttons */}
                 <div className="flex justify-end space-x-3 pt-4 border-t">
