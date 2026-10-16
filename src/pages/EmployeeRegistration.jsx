@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
-import { User, ArrowLeft, Eye, EyeOff, Loader, ChevronDown, AlertCircle, CheckCircle, Building } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom'; // Import useNavigate
+import { ArrowLeft, Eye, EyeOff, Loader2, ChevronDown, ChevronRight, AlertCircle, CheckCircle2, Search } from 'lucide-react';
 import { checkAuthStatus } from '../utils/checkAuthRedirect';
+import AuthLayout from '../components/layout/AuthLayout';
 
 // Position options for employee registration
 const positionOptions = [
@@ -19,6 +20,21 @@ const accountNameOptions = [
   { value: 'user_expert', label: 'User Expert' },
   { value: 'user_sme', label: 'User SME' }
   // Add more options as needed
+];
+
+const sectionLabel = 'block text-[12px] font-semibold uppercase tracking-[0.12em] text-ink/45';
+
+const FieldError = ({ id, children }) => (
+  <p id={id} className="field-error-text">
+    <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+    {children}
+  </p>
+);
+
+const NEXT_STEPS = [
+  'Verify your email with the 6-digit code we send you',
+  'Your company reviews and approves your request',
+  'Log in and start swapping shifts and days off',
 ];
 
 // Employee Registration Form
@@ -249,484 +265,508 @@ const EmployeeRegistration = () => { // Remove setCurrentPage prop
     fetchCompanies();
   };
 
+  const comboDisabled = loadingCompanies || companies.length === 0;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          {/* Use navigate(-1) for back button */}
+    <AuthLayout
+      aside="employee"
+      wide
+      topLink={{ label: 'Log in', to: '/employee_login' }}
+      footer={
+        <p>
+          Already have an account?{' '}
+          {/* Use navigate for login link */}
           <button
-            onClick={() => navigate(-1)} // Go back in history
-            className="mb-6 inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors duration-200"
+            type="button"
+            onClick={() => navigate('/employee_login')} // Adjust the path as needed
+            className="font-semibold text-brand-600 transition-colors hover:text-brand-700"
             disabled={isLoading}
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+            Log in
           </button>
-          <div className="flex items-center justify-center mb-6">
-            <div className="bg-blue-100 p-3 rounded-full">
-              <User className="h-8 w-8 text-blue-600" />
-            </div>
-          </div>
-          <h2 className="text-3xl font-bold text-gray-900">Request Employee Access</h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Submit a request to join your company
-          </p>
-        </div>
-        <div className="space-y-6">
-          <div className="space-y-4">
-            {/* Full Name */}
-            <div>
-              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
-                Full Name *
-              </label>
-              <input
-                id="fullName"
-                name="fullName"
-                type="text"
-                autoComplete="name"
-                value={formData.fullName}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 ${errors.fullName ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                  }`}
-                placeholder="Enter your full name"
-                disabled={isLoading}
-              />
-              {errors.fullName && (
-                <div className="flex items-center space-x-1 mt-1">
-                  <AlertCircle className="h-4 w-4 text-red-500" />
-                  <p className="text-sm text-red-600">{errors.fullName}</p>
-                </div>
-              )}
-            </div>
-            {/* Account Name - Changed to Select */}
-            <div className={`${formData.accountName ? 'mb-8' : 'mb-0'} transition-all duration-300`}>
-              <label htmlFor="accountName" className="block text-sm font-medium text-gray-700 mb-1">
-                Account Name *
-              </label>
-              <div className="relative">
-                {/* Hidden select element for form data binding - Keep it but don't let it block interaction */}
-                <select
-                  id="accountName"
-                  name="accountName"
-                  value={formData.accountName}
+        </p>
+      }
+    >
+      <div className="mx-auto w-full max-w-[600px] lg:max-w-none">
+        {/* Use navigate(-1) for back button */}
+        <button
+          type="button"
+          onClick={() => navigate(-1)} // Go back in history
+          className="-ml-1 mb-5 inline-flex h-10 items-center gap-1.5 rounded-full pl-1 pr-3 text-sm font-medium text-ink/55 transition-colors hover:text-ink disabled:opacity-50"
+          disabled={isLoading}
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          Back
+        </button>
+
+        <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-ink/45">Step 1 of 2 · Your details</p>
+        <h1 className="mt-2 font-display text-[30px] leading-tight text-ink sm:text-[34px]">Request to join your company</h1>
+        <p className="mt-2 text-[15px] leading-relaxed text-ink/60">
+          Pick your company and enter the employee ID it gave you. After you verify your email, your company reviews the request.
+        </p>
+
+        <Link
+          to="/company_register"
+          className="group mt-5 inline-block rounded-full bg-lavender-200 px-4 py-2 text-[13px] leading-snug text-lavender-700 transition-colors hover:bg-lavender-300 sm:text-sm"
+        >
+          Registering a new company?{' '}
+          <span className="whitespace-nowrap font-semibold">
+            Company sign-up
+            <ChevronRight className="ml-0.5 inline h-4 w-4 align-[-3px] transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+          </span>
+        </Link>
+
+        <div className="mt-8 space-y-8">
+          {/* About you */}
+          <fieldset>
+            <legend className={sectionLabel}>About you</legend>
+            <div className="mt-4 space-y-5">
+              {/* Full Name */}
+              <div>
+                <label htmlFor="fullName" className="field-label">
+                  Full name
+                </label>
+                <input
+                  id="fullName"
+                  name="fullName"
+                  type="text"
+                  autoComplete="name"
+                  value={formData.fullName}
                   onChange={handleChange}
-                  className="sr-only" // Use screen reader only class to hide it completely from view and interaction
-                >
-                  <option value="">Choose an account name</option>
-                  {filteredAccountNames.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-                {/* Custom searchable select UI */}
-                <div
-                  className={`w-full px-3 py-2 border rounded-lg shadow-sm focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-colors duration-200 bg-white flex items-center justify-between ${errors.accountName ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                    } ${loadingCompanies || companies.length === 0 ? 'bg-gray-50' : ''}`}
-                >
-                  <input
-                    id="account-name-search-input"
-                    type="text"
-                    value={accountNameSearchTerm}
-                    onChange={(e) => setAccountNameSearchTerm(e.target.value)}
-                    placeholder={
-                      formData.accountName
-                        ? accountNameOptions.find(opt => opt.value === formData.accountName)?.label || 'Select account name'
-                        : 'Write your account name and choose!'
-                    }
-                    className="w-full bg-transparent border-0 focus:ring-0 focus:outline-none p-0 text-gray-900 placeholder-gray-500"
-                    disabled={loadingCompanies || isLoading || companies.length === 0}
-                  />
-                  {/* <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" /> */}
-                </div>
-                {/* Dropdown list */}
-                {accountNameSearchTerm && !loadingCompanies && accountNameOptions.length > 0 && (
-                  <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md py-1 max-h-60 overflow-auto">
-                    {filteredAccountNames.length === 0 ? (
-                      <div className="px-4 py-2 text-gray-500">No account names found</div>
-                    ) : (
-                      filteredAccountNames.map((option) => (
-                        <div
-                          key={option.value}
-                          className="px-4 py-2 hover:bg-blue-50 cursor-pointer flex items-center"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setFormData(prev => ({ ...prev, accountName: option.value }));
-                            setAccountNameSearchTerm('');
-                            if (errors.accountName) {
-                              setErrors(prev => ({ ...prev, accountName: '' }));
-                            }
-                            if (errors.submit) {
-                              setErrors(prev => ({ ...prev, submit: '' }));
-                            }
-                          }}
-                        >
-                          <span className="truncate">{option.label}</span>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                )}
-              </div>
-              {errors.accountName && (
-                <div className="flex items-center space-x-1 mt-1">
-                  <AlertCircle className="h-4 w-4 text-red-500" />
-                  <p className="text-sm text-red-600">{errors.accountName}</p>
-                </div>
-              )}
-            </div>
-            {/* Email */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email Address *
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                value={formData.email}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 ${errors.email ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                  }`}
-                placeholder="your.email@example.com"
-                disabled={isLoading}
-              />
-              {errors.email && (
-                <div className="flex items-center space-x-1 mt-1">
-                  <AlertCircle className="h-4 w-4 text-red-500" />
-                  <p className="text-sm text-red-600">{errors.email}</p>
-                </div>
-              )}
-            </div>
-
-            {/* Company Selection - Searchable */}
-            <div className={`${formData.companyId ? 'mb-8' : 'mb-0'} transition-all duration-300`}>
-              <label htmlFor="companyId" className="block text-sm font-medium text-gray-700 mb-1">
-                Your Company Name *
-              </label>
-              <div className="relative">
-                {/* Hidden select element for form data binding - Keep it but don't let it block interaction */}
-                <select
-                  id="companyId"
-                  name="companyId"
-                  value={formData.companyId}
-                  onChange={handleChange}
-                  className="sr-only" // Use screen reader only class to hide it completely from view and interaction
-                >
-                  <option value="">Select a company</option>
-                  {filteredCompanies.map((company) => (
-                    <option key={company._id} value={company._id}>
-                      {company.name}
-                    </option>
-                  ))}
-                </select>
-
-                {/* Custom searchable select UI */}
-                <div
-                  className={`w-full px-3 py-2 border rounded-lg shadow-sm focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-colors duration-200 bg-white flex items-center justify-between ${errors.companyId ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                    } ${loadingCompanies || companies.length === 0 ? 'bg-gray-50' : ''}`}
-                >
-                  <input
-                    id="company-search-input"
-                    type="text"
-                    value={companySearchTerm}
-                    onChange={(e) => setCompanySearchTerm(e.target.value)}
-                    placeholder={
-                      loadingCompanies
-                        ? 'Loading companies...'
-                        : companies.length === 0
-                          ? 'No companies available'
-                          : formData.companyId
-                            ? companies.find(c => c._id === formData.companyId)?.name || 'Select company'
-                            : 'Write your company name and choose!'
-                    }
-                    className="w-full bg-transparent border-0 focus:ring-0 focus:outline-none p-0 text-gray-900 placeholder-gray-500"
-                    disabled={loadingCompanies || isLoading || companies.length === 0}
-                  />
-                  {/* <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" /> */}
-                </div>
-
-                {/* Dropdown list */}
-                {companySearchTerm && !loadingCompanies && companies.length > 0 && (
-                  <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md py-1 max-h-60 overflow-auto">
-                    {filteredCompanies.length === 0 ? (
-                      <div className="px-4 py-2 text-gray-500">No companies found</div>
-                    ) : (
-                      filteredCompanies.map((company) => (
-                        <div
-                          key={company._id}
-                          className="px-4 py-2 hover:bg-blue-50 cursor-pointer flex items-center"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setFormData(prev => ({ ...prev, companyId: company._id }));
-                            setCompanySearchTerm('');
-                            if (errors.companyId) {
-                              setErrors(prev => ({ ...prev, companyId: '' }));
-                            }
-                            if (errors.submit) {
-                              setErrors(prev => ({ ...prev, submit: '' }));
-                            }
-                          }}
-                        >
-                          <img
-                            src={`${process.env.REACT_APP_URI_API_URL}/images/companies/logos/${company.logo}`}
-                            alt={`${company.name} Logo`}
-                            className="h-8 w-8 object-contain mr-3 rounded-full"
-                          />
-                          <span className="truncate">{company.name}</span>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                )}
+                  className={`field ${errors.fullName ? 'field-error' : ''}`}
+                  placeholder="Enter your full name"
+                  disabled={isLoading}
+                  aria-invalid={!!errors.fullName}
+                  aria-describedby={errors.fullName ? 'fullName-error' : undefined}
+                />
+                {errors.fullName && <FieldError id="fullName-error">{errors.fullName}</FieldError>}
               </div>
 
-              {errors.companyId && (
-                <div className="flex items-center space-x-1 mt-1">
-                  <AlertCircle className="h-4 w-4 text-red-500" />
-                  <p className="text-sm text-red-600">{errors.companyId}</p>
+              <div className="grid gap-5 sm:grid-cols-2">
+                {/* Email */}
+                <div className="min-w-0">
+                  <label htmlFor="email" className="field-label">
+                    Email address
+                  </label>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className={`field ${errors.email ? 'field-error' : ''}`}
+                    placeholder="your.email@example.com"
+                    disabled={isLoading}
+                    aria-invalid={!!errors.email}
+                    aria-describedby={errors.email ? 'email-error' : undefined}
+                  />
+                  {errors.email && <FieldError id="email-error">{errors.email}</FieldError>}
                 </div>
-              )}
-              {companiesError && (
-                <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <AlertCircle className="h-4 w-4 text-red-500" />
-                      <p className="text-sm text-red-600">{companiesError}</p>
+
+                {/* Phone Number */}
+                <div className="min-w-0">
+                  <label htmlFor="phoneNumber" className="field-label">
+                    Phone number
+                  </label>
+                  <input
+                    id="phoneNumber"
+                    name="phoneNumber"
+                    type="tel"
+                    autoComplete="tel"
+                    value={formData.phoneNumber}
+                    onChange={handleChange}
+                    className={`field ${errors.phoneNumber ? 'field-error' : ''}`}
+                    placeholder="+201234567890"
+                    disabled={isLoading}
+                    aria-invalid={!!errors.phoneNumber}
+                    aria-describedby={errors.phoneNumber ? 'phoneNumber-error phoneNumber-hint' : 'phoneNumber-hint'}
+                  />
+                  {errors.phoneNumber && <FieldError id="phoneNumber-error">{errors.phoneNumber}</FieldError>}
+                  <p id="phoneNumber-hint" className="field-hint">
+                    Include your country code, e.g. +20, +971, +1, +44
+                  </p>
+                </div>
+              </div>
+            </div>
+          </fieldset>
+
+          {/* Your company */}
+          <fieldset>
+            <legend className={sectionLabel}>Your company</legend>
+            <div className="mt-4 space-y-5">
+              {/* Company Selection - Searchable */}
+              <div>
+                <label htmlFor="company-search-input" className="field-label">
+                  Company
+                </label>
+                <div className="relative">
+                  {/* Hidden select element for form data binding - Keep it but don't let it block interaction */}
+                  <select
+                    id="companyId"
+                    name="companyId"
+                    value={formData.companyId}
+                    onChange={handleChange}
+                    className="sr-only" // Use screen reader only class to hide it completely from view and interaction
+                    tabIndex={-1}
+                    aria-hidden="true"
+                  >
+                    <option value="">Select a company</option>
+                    {filteredCompanies.map((company) => (
+                      <option key={company._id} value={company._id}>
+                        {company.name}
+                      </option>
+                    ))}
+                  </select>
+
+                  {/* Custom searchable select UI */}
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/40" aria-hidden="true" />
+                    <input
+                      id="company-search-input"
+                      type="text"
+                      autoComplete="off"
+                      value={companySearchTerm}
+                      onChange={(e) => setCompanySearchTerm(e.target.value)}
+                      placeholder={
+                        loadingCompanies
+                          ? 'Loading companies...'
+                          : companies.length === 0
+                            ? 'No companies available'
+                            : formData.companyId
+                              ? companies.find(c => c._id === formData.companyId)?.name || 'Select company'
+                              : 'Write your company name and choose!'
+                      }
+                      className={`field pl-11 pr-11 ${errors.companyId ? 'field-error' : ''} ${
+                        comboDisabled ? 'cursor-not-allowed bg-sand-100' : ''
+                      } ${formData.companyId ? 'placeholder:text-ink' : ''}`}
+                      disabled={loadingCompanies || isLoading || companies.length === 0}
+                      aria-invalid={!!errors.companyId}
+                      aria-describedby={errors.companyId ? 'companyId-error' : undefined}
+                    />
+                    {loadingCompanies && (
+                      <Loader2 className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-ink/40" aria-hidden="true" />
+                    )}
+                  </div>
+
+                  {/* Dropdown list */}
+                  {companySearchTerm && !loadingCompanies && companies.length > 0 && (
+                    <div className="absolute z-20 mt-2 max-h-64 w-full overflow-auto rounded-2xl border border-ink/[0.07] bg-white p-1.5 shadow-float animate-slide-down">
+                      {filteredCompanies.length === 0 ? (
+                        <div className="px-3 py-2.5 text-sm text-ink/50">No companies found</div>
+                      ) : (
+                        filteredCompanies.map((company) => (
+                          <button
+                            type="button"
+                            key={company._id}
+                            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-ink transition-colors hover:bg-brand-50 focus-visible:bg-brand-50"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setFormData(prev => ({ ...prev, companyId: company._id }));
+                              setCompanySearchTerm('');
+                              if (errors.companyId) {
+                                setErrors(prev => ({ ...prev, companyId: '' }));
+                              }
+                              if (errors.submit) {
+                                setErrors(prev => ({ ...prev, submit: '' }));
+                              }
+                            }}
+                          >
+                            <img
+                              src={`${process.env.REACT_APP_URI_API_URL}/images/companies/logos/${company.logo}`}
+                              alt={`${company.name} Logo`}
+                              className="h-8 w-8 shrink-0 rounded-lg border border-ink/[0.07] bg-white object-contain"
+                            />
+                            <span className="truncate font-medium">{company.name}</span>
+                          </button>
+                        ))
+                      )}
                     </div>
+                  )}
+                </div>
+
+                {errors.companyId && <FieldError id="companyId-error">{errors.companyId}</FieldError>}
+                {companiesError && (
+                  <div className="alert alert-error mt-3 items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+                      {companiesError}
+                    </span>
                     <button
+                      type="button"
                       onClick={retryFetchCompanies}
-                      className="text-sm text-red-600 hover:text-red-800 underline"
+                      className="inline-flex min-h-[36px] shrink-0 items-center rounded-full px-3 font-semibold underline underline-offset-2 hover:text-rose-500"
                       disabled={loadingCompanies}
                     >
                       Retry
                     </button>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
 
-            {formData.companyId && (
-              <div className="p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg">
-                ✅ You have selected a company: <strong>{companies.find(c => c._id === formData.companyId)?.name}</strong>
+                {formData.companyId && (
+                  <div className="mt-3 flex items-center gap-2.5 rounded-xl border border-mint-300 bg-mint-100 px-4 py-3 text-sm text-mint-700">
+                    <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+                    <p className="min-w-0">
+                      Selected company: <strong className="font-semibold">{companies.find(c => c._id === formData.companyId)?.name}</strong>
+                    </p>
+                  </div>
+                )}
               </div>
-            )}
 
-            {/* Position */}
-            <div>
-              <label htmlFor="position" className="block text-sm font-medium text-gray-700 mb-1">
-                Position *
-              </label>
-              <div className="relative">
-                <select
-                  id="position"
-                  name="position"
-                  value={formData.position}
-                  onChange={handleChange}
-                  disabled={isLoading}
-                  className={`w-full px-3 py-2 pr-10 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 appearance-none bg-white ${errors.position ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                    }`}
-                >
-                  <option value="">Select your position</option>
-                  {positionOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute inset-y-0 right-0 h-full w-8 text-gray-400 pointer-events-none flex items-center justify-center" />
+              <div className="grid gap-5 sm:grid-cols-2">
+                {/* Employee ID */}
+                <div className="min-w-0">
+                  <label htmlFor="employeeId" className="field-label">
+                    Employee ID
+                  </label>
+                  <input
+                    id="employeeId"
+                    name="employeeId"
+                    type="text"
+                    autoComplete="off"
+                    value={formData.employeeId}
+                    onChange={handleChange}
+                    className={`field ${errors.employeeId ? 'field-error' : ''}`}
+                    placeholder="EMP-XXXX-EXP-12345"
+                    disabled={isLoading}
+                    aria-invalid={!!errors.employeeId}
+                    aria-describedby={errors.employeeId ? 'employeeId-error employeeId-hint' : 'employeeId-hint'}
+                  />
+                  {errors.employeeId && <FieldError id="employeeId-error">{errors.employeeId}</FieldError>}
+                  <p id="employeeId-hint" className="field-hint">
+                    The ID your company gave you
+                  </p>
+                </div>
+
+                {/* Position */}
+                <div className="min-w-0">
+                  <label htmlFor="position" className="field-label">
+                    Position
+                  </label>
+                  <div className="relative">
+                    <select
+                      id="position"
+                      name="position"
+                      value={formData.position}
+                      onChange={handleChange}
+                      disabled={isLoading}
+                      className={`field appearance-none pr-11 ${errors.position ? 'field-error' : ''} ${
+                        formData.position ? '' : 'text-ink/45'
+                      } [&>option]:text-ink`}
+                      aria-invalid={!!errors.position}
+                      aria-describedby={errors.position ? 'position-error' : undefined}
+                    >
+                      <option value="">Select your position</option>
+                      {positionOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/45" aria-hidden="true" />
+                  </div>
+                  {errors.position && <FieldError id="position-error">{errors.position}</FieldError>}
+                </div>
               </div>
-              {errors.position && (
-                <div className="flex items-center space-x-1 mt-1">
-                  <AlertCircle className="h-4 w-4 text-red-500" />
-                  <p className="text-sm text-red-600">{errors.position}</p>
+
+              {/* Account Name - Changed to Select */}
+              <div>
+                <label htmlFor="account-name-search-input" className="field-label">
+                  Account name
+                </label>
+                <div className="relative">
+                  {/* Hidden select element for form data binding - Keep it but don't let it block interaction */}
+                  <select
+                    id="accountName"
+                    name="accountName"
+                    value={formData.accountName}
+                    onChange={handleChange}
+                    className="sr-only" // Use screen reader only class to hide it completely from view and interaction
+                    tabIndex={-1}
+                    aria-hidden="true"
+                  >
+                    <option value="">Choose an account name</option>
+                    {filteredAccountNames.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  {/* Custom searchable select UI */}
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/40" aria-hidden="true" />
+                    <input
+                      id="account-name-search-input"
+                      type="text"
+                      autoComplete="off"
+                      value={accountNameSearchTerm}
+                      onChange={(e) => setAccountNameSearchTerm(e.target.value)}
+                      placeholder={
+                        formData.accountName
+                          ? accountNameOptions.find(opt => opt.value === formData.accountName)?.label || 'Select account name'
+                          : 'Write your account name and choose!'
+                      }
+                      className={`field pl-11 ${errors.accountName ? 'field-error' : ''} ${
+                        comboDisabled ? 'cursor-not-allowed bg-sand-100' : ''
+                      } ${formData.accountName ? 'placeholder:text-ink' : ''}`}
+                      disabled={loadingCompanies || isLoading || companies.length === 0}
+                      aria-invalid={!!errors.accountName}
+                      aria-describedby={errors.accountName ? 'accountName-error accountName-hint' : 'accountName-hint'}
+                    />
+                  </div>
+                  {/* Dropdown list */}
+                  {accountNameSearchTerm && !loadingCompanies && accountNameOptions.length > 0 && (
+                    <div className="absolute z-20 mt-2 max-h-64 w-full overflow-auto rounded-2xl border border-ink/[0.07] bg-white p-1.5 shadow-float animate-slide-down">
+                      {filteredAccountNames.length === 0 ? (
+                        <div className="px-3 py-2.5 text-sm text-ink/50">No account names found</div>
+                      ) : (
+                        filteredAccountNames.map((option) => (
+                          <button
+                            type="button"
+                            key={option.value}
+                            className="flex w-full items-center rounded-xl px-3 py-2.5 text-left text-sm font-medium text-ink transition-colors hover:bg-brand-50 focus-visible:bg-brand-50"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setFormData(prev => ({ ...prev, accountName: option.value }));
+                              setAccountNameSearchTerm('');
+                              if (errors.accountName) {
+                                setErrors(prev => ({ ...prev, accountName: '' }));
+                              }
+                              if (errors.submit) {
+                                setErrors(prev => ({ ...prev, submit: '' }));
+                              }
+                            }}
+                          >
+                            <span className="truncate">{option.label}</span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-            {/* Employee ID */}
-            <div>
-              <label htmlFor="employeeId" className="block text-sm font-medium text-gray-700 mb-1">
-                Employee ID *
-              </label>
-              <input
-                id="employeeId"
-                name="employeeId"
-                type="text"
-                value={formData.employeeId}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 ${errors.employeeId ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                  }`}
-                placeholder="EMP-XXXX-EXP-12345"
-                disabled={isLoading}
-              />
-              {errors.employeeId && (
-                <div className="flex items-center space-x-1 mt-1">
-                  <AlertCircle className="h-4 w-4 text-red-500" />
-                  <p className="text-sm text-red-600">{errors.employeeId}</p>
-                </div>
-              )}
-            </div>
-            {/* Phone Number */}
-            <div>
-              <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
-                Phone Number *
-              </label>
-              <input
-                id="phoneNumber"
-                name="phoneNumber"
-                type="tel"
-                value={formData.phoneNumber}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 ${errors.phoneNumber ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                  }`}
-                placeholder="+201234567890"
-                disabled={isLoading}
-              />
-              {errors.phoneNumber && (
-                <div className="flex items-center space-x-1 mt-1">
-                  <AlertCircle className="h-4 w-4 text-red-500" />
-                  <p className="text-sm text-red-600">{errors.phoneNumber}</p>
-                </div>
-              )}
-              <p className="mt-1 text-xs text-gray-500">
-                Include country code (e.g.,+20, +971, +1, +44)
-              </p>
-            </div>
-            {/* Password */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                Password *
-              </label>
-              <div className="relative">
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="new-password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  className={`w-full px-3 py-2 pr-10 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 ${errors.password ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                    }`}
-                  placeholder="Create a password"
-                  disabled={isLoading}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors duration-200"
-                  disabled={isLoading}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-              {errors.password && (
-                <div className="flex items-center space-x-1 mt-1">
-                  <AlertCircle className="h-4 w-4 text-red-500" />
-                  <p className="text-sm text-red-600">{errors.password}</p>
-                </div>
-              )}
-              <div className="mt-2 text-xs text-gray-500 space-y-1">
-                <p>Password must:</p>
-                <ul className="list-disc list-inside ml-1 space-y-1">
-                  <li>Be at least 6 characters long</li>
-                  <li>Include a combination of letters and numbers</li>
-                  <li>Include at least one special character (e.g., !@#$%&*)</li>
-                  <li>Include at least one uppercase letter</li>
-                </ul>
+                {errors.accountName && <FieldError id="accountName-error">{errors.accountName}</FieldError>}
+                <p id="accountName-hint" className="field-hint">
+                  Start typing, then pick your account from the list
+                </p>
               </div>
             </div>
-            {/* Confirm Password */}
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                Confirm Password *
-              </label>
-              <div className="relative">
-                <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="new-password"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  className={`w-full px-3 py-2 pr-10 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 ${errors.confirmPassword ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                    }`}
-                  placeholder="Confirm your password"
-                  disabled={isLoading}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors duration-200"
-                  disabled={isLoading}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-              {errors.confirmPassword && (
-                <div className="flex items-center space-x-1 mt-1">
-                  <AlertCircle className="h-4 w-4 text-red-500" />
-                  <p className="text-sm text-red-600">{errors.confirmPassword}</p>
+          </fieldset>
+
+          {/* Password */}
+          <fieldset>
+            <legend className={sectionLabel}>Password</legend>
+            <div className="mt-4 grid gap-5 sm:grid-cols-2">
+              <div className="min-w-0">
+                <label htmlFor="password" className="field-label">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    className={`field pr-12 ${errors.password ? 'field-error' : ''}`}
+                    placeholder="Create a password"
+                    disabled={isLoading}
+                    aria-invalid={!!errors.password}
+                    aria-describedby={errors.password ? 'password-error password-hint' : 'password-hint'}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 flex w-12 items-center justify-center rounded-r-xl text-ink/45 transition-colors hover:text-ink disabled:cursor-not-allowed"
+                    disabled={isLoading}
+                    aria-label={showPassword ? 'Hide passwords' : 'Show passwords'}
+                  >
+                    {showPassword ? <EyeOff className="h-[18px] w-[18px]" aria-hidden="true" /> : <Eye className="h-[18px] w-[18px]" aria-hidden="true" />}
+                  </button>
                 </div>
-              )}
+                {errors.password && <FieldError id="password-error">{errors.password}</FieldError>}
+              </div>
+
+              <div className="min-w-0">
+                <label htmlFor="confirmPassword" className="field-label">
+                  Confirm password
+                </label>
+                <div className="relative">
+                  <input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    className={`field pr-12 ${errors.confirmPassword ? 'field-error' : ''}`}
+                    placeholder="Confirm your password"
+                    disabled={isLoading}
+                    aria-invalid={!!errors.confirmPassword}
+                    aria-describedby={errors.confirmPassword ? 'confirmPassword-error' : undefined}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 flex w-12 items-center justify-center rounded-r-xl text-ink/45 transition-colors hover:text-ink disabled:cursor-not-allowed"
+                    disabled={isLoading}
+                    aria-label={showPassword ? 'Hide passwords' : 'Show passwords'}
+                  >
+                    {showPassword ? <EyeOff className="h-[18px] w-[18px]" aria-hidden="true" /> : <Eye className="h-[18px] w-[18px]" aria-hidden="true" />}
+                  </button>
+                </div>
+                {errors.confirmPassword && <FieldError id="confirmPassword-error">{errors.confirmPassword}</FieldError>}
+              </div>
             </div>
-          </div>
-          {/* Submit Error */}
+            <p id="password-hint" className="field-hint">
+              Use at least 6 characters. Mixing upper- and lowercase letters, numbers and a symbol makes it stronger.
+            </p>
+          </fieldset>
+        </div>
+
+        {/* Submit Error */}
+        <div aria-live="polite">
           {errors.submit && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-              <div className="flex items-center space-x-2">
-                <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
-                <p className="text-sm text-red-600">{errors.submit}</p>
-              </div>
+            <div className="alert alert-error mt-6">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+              <p>{errors.submit}</p>
             </div>
           )}
-          {/* Process Information */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-start space-x-3">
-              <CheckCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-              <div className="text-sm text-blue-800">
-                <p className="font-medium">Request Process:</p>
-                <ol className="mt-2 space-y-1">
-                  <li>1. Verify your email address</li>
-                  <li>2. Wait for company approval</li>
-                  <li>3. Gain access to shift swapping</li>
-                </ol>
-              </div>
-            </div>
-          </div>
-          {/* Submit Button */}
-          <button
-            onClick={handleSubmit}
-            disabled={isLoading || loadingCompanies || companies.length === 0}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center"
-          >
-            {isLoading ? (
-              <>
-                <Loader className="animate-spin h-4 w-4 mr-2" />
-                Submitting Request...
-              </>
-            ) : (
-              'Submit Employee Request'
-            )}
-          </button>
-          {/* Login Link */}
-          <div className="text-center">
-            <p className="text-sm text-gray-600">
-              Already have an account?{' '}
-              {/* Use navigate for login link */}
-              <button
-                type="button"
-                onClick={() => navigate('/employee_login')} // Adjust the path as needed
-                className="font-medium text-blue-600 hover:text-blue-700 transition-colors duration-200"
-                disabled={isLoading}
-              >
-                Sign in
-              </button>
-            </p>
-          </div>
         </div>
+
+        {/* Process Information */}
+        <div className="card-sand mt-7 p-5">
+          <h2 className="text-sm font-semibold text-ink">What happens next</h2>
+          <ol className="mt-3 space-y-2.5">
+            {NEXT_STEPS.map((step, i) => (
+              <li key={step} className="flex items-start gap-3 text-[13px] leading-relaxed text-ink/70">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white font-display text-[13px] text-ink shadow-soft">
+                  {i + 1}
+                </span>
+                <span className="pt-0.5">{step}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        {/* Submit Button */}
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={isLoading || loadingCompanies || companies.length === 0}
+          className="btn btn-primary btn-lg mt-7 w-full"
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              Submitting request…
+            </>
+          ) : (
+            'Submit request'
+          )}
+        </button>
       </div>
-    </div>
+    </AuthLayout>
   );
 };
 

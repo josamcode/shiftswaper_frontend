@@ -12,7 +12,6 @@ import {
   Check,
   X,
   LogOut,
-  ChevronDown,
   AlertCircle,
   Loader,
   Search,
@@ -23,12 +22,51 @@ import {
 import Swal from 'sweetalert2';
 import { useAuth } from '../auth/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { StatusBadge } from '../components/product/Mockups';
 
 const combineDateTime = (dateStr, timeStr) => {
   if (!dateStr || !timeStr) return null;
   const dateTime = new Date(`${dateStr}T${timeStr}`);
   return isNaN(dateTime.getTime()) ? null : dateTime.toISOString();
 };
+
+/* Presentational helpers ------------------------------------------------ */
+const POSITION_LABELS = { expert: 'Expert', sme: 'SME', supervisor: 'Supervisor', moderator: 'Moderator' };
+const EYEBROW = 'text-[12px] font-semibold uppercase tracking-[0.12em] text-ink/45';
+
+const ModalHeader = ({ id, title, onClose }) => (
+  <div className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-ink/[0.07] bg-white px-6 py-4">
+    <h2 id={id} className="font-display text-[22px] leading-tight text-ink sm:text-2xl">{title}</h2>
+    <button
+      type="button"
+      onClick={onClose}
+      aria-label="Close"
+      className="-mr-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink/55 transition-colors hover:bg-ink/5 hover:text-ink"
+    >
+      <X className="h-5 w-5" aria-hidden="true" />
+    </button>
+  </div>
+);
+
+const ModalFooter = ({ children }) => (
+  <div className="sticky bottom-0 z-10 flex flex-col-reverse gap-2 border-t border-ink/[0.07] bg-white px-6 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 sm:flex-row sm:justify-end">
+    {children}
+  </div>
+);
+
+const DetailSection = ({ title, tone = 'bg-sand-100', titleClass = 'text-ink/45', children }) => (
+  <section className={`rounded-2xl p-4 sm:p-5 ${tone}`}>
+    <h3 className={`mb-3 text-[12px] font-semibold uppercase tracking-[0.12em] ${titleClass}`}>{title}</h3>
+    {children}
+  </section>
+);
+
+const Detail = ({ label, className = '', children }) => (
+  <div className={className}>
+    <dt className="text-xs font-medium text-ink/50">{label}</dt>
+    <dd className="mt-1 text-sm text-ink">{children}</dd>
+  </div>
+);
 
 const EmployeeDashboard = () => {
   const navigate = useNavigate();
@@ -103,6 +141,19 @@ const EmployeeDashboard = () => {
   useEffect(() => {
     calculateStats(shiftRequests, dayOffRequests);
   }, [shiftRequests, dayOffRequests]);
+
+  // Escape closes an open modal (same as its close button); ignored while a SweetAlert is open.
+  useEffect(() => {
+    if (!showCreateModal && !showEditModal && !showViewModal) return undefined;
+    const onKeyDown = (e) => {
+      if (e.key !== 'Escape' || Swal.isVisible()) return;
+      setShowCreateModal(false);
+      setShowEditModal(false);
+      setShowViewModal(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [showCreateModal, showEditModal, showViewModal]);
 
   const loadEmployeeData = () => {
     try {
@@ -227,7 +278,7 @@ const EmployeeDashboard = () => {
 
   const showSuccessMessage = (message) => {
     const successElement = document.createElement('div');
-    successElement.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+    successElement.className = 'fixed left-4 right-4 top-[86px] z-[70] rounded-2xl bg-ink px-4 py-3 text-sm font-medium text-white shadow-float animate-slide-down sm:left-auto sm:max-w-sm';
     successElement.textContent = message;
     document.body.appendChild(successElement);
     setTimeout(() => {
@@ -475,8 +526,8 @@ const EmployeeDashboard = () => {
       text: "You won't be able to revert this!",
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
+      confirmButtonColor: '#E0566E',
+      cancelButtonColor: '#A9A4B4',
       confirmButtonText: 'Yes, delete it!'
     });
     if (result.isConfirmed) {
@@ -515,8 +566,8 @@ const EmployeeDashboard = () => {
       text: "You will be accepting this counter offer.",
       icon: 'question',
       showCancelButton: true,
-      confirmButtonColor: '#10b981',
-      cancelButtonColor: '#6b7280',
+      confirmButtonColor: '#2998FF',
+      cancelButtonColor: '#A9A4B4',
       confirmButtonText: 'Yes, accept it!'
     });
     if (result.isConfirmed) {
@@ -556,8 +607,8 @@ const EmployeeDashboard = () => {
       text: "You will be accepting this day off match.",
       icon: 'question',
       showCancelButton: true,
-      confirmButtonColor: '#10b981',
-      cancelButtonColor: '#6b7280',
+      confirmButtonColor: '#2998FF',
+      cancelButtonColor: '#A9A4B4',
       confirmButtonText: 'Yes, accept it!'
     });
     if (result.isConfirmed) {
@@ -622,8 +673,8 @@ const EmployeeDashboard = () => {
       text: "You will be logged out of your account",
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
+      confirmButtonColor: '#2998FF',
+      cancelButtonColor: '#A9A4B4',
       confirmButtonText: 'Yes, logout',
       cancelButtonText: 'Cancel'
     });
@@ -647,19 +698,8 @@ const EmployeeDashboard = () => {
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'offers_received': return 'bg-blue-100 text-blue-800';
-      case 'matched': return 'bg-blue-100 text-blue-800';
-      case 'approved': return 'bg-green-100 text-green-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   const getTypeColor = (type) => {
-    return type === 'shift' ? 'bg-purple-100 text-purple-800' : 'bg-orange-100 text-orange-800';
+    return type === 'shift' ? 'bg-lavender-200 text-lavender-700' : 'bg-peach-200 text-peach-700';
   };
 
   const formatDate = (dateString) => {
@@ -710,429 +750,418 @@ const EmployeeDashboard = () => {
     return true;
   };
 
-  // Dashboard Overview Tab
-  const renderOverview = () => (
-    <div className="space-y-6">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="bg-purple-100 p-3 rounded-full">
-              <Zap className="h-6 w-6 text-purple-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Shift Requests</p>
-              <p className="text-2xl font-bold text-gray-900">{dashboardStats.totalShiftRequests}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="bg-orange-100 p-3 rounded-full">
-              <CalendarDays className="h-6 w-6 text-orange-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Day Off Requests</p>
-              <p className="text-2xl font-bold text-gray-900">{dashboardStats.totalDayOffRequests}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="bg-yellow-100 p-3 rounded-full">
-              <Clock className="h-6 w-6 text-yellow-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Pending Shifts</p>
-              <p className="text-2xl font-bold text-gray-900">{dashboardStats.pendingShiftRequests}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="bg-blue-100 p-3 rounded-full">
-              <Calendar className="h-6 w-6 text-blue-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Pending Days Off</p>
-              <p className="text-2xl font-bold text-gray-900">{dashboardStats.pendingDayOffRequests}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="bg-green-100 p-3 rounded-full">
-              <Check className="h-6 w-6 text-green-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Approved</p>
-              <p className="text-2xl font-bold text-gray-900">{dashboardStats.approvedRequests}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="bg-red-100 p-3 rounded-full">
-              <X className="h-6 w-6 text-red-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Rejected</p>
-              <p className="text-2xl font-bold text-gray-900">{dashboardStats.rejectedRequests}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      {/* Recent Requests */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">Recent Requests</h3>
-        </div>
-        <div className="p-6">
-          {[...filteredShiftRequests, ...filteredDayOffRequests]
-            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-            .slice(0, 5)
-            .map((request) => (
-              <div key={request._id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
-                <div className="flex items-center space-x-3">
-                  <div className="bg-gray-100 rounded-full p-2">
-                    {request.type === 'shift' ? <Zap className="h-4 w-4 text-purple-600" /> : <CalendarDays className="h-4 w-4 text-orange-600" />}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{request.reason}</p>
-                    <p className="text-xs text-gray-500">{formatDate(request.createdAt)}</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(request.type || (request.shiftStartDate ? 'shift' : 'dayoff'))}`}>
-                    {request.type === 'shift' ? 'Shift' : 'Day Off'}
-                  </span>
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(request.status)}`}>
-                    {request.status === 'matched' ? 'offers_received' : request.status}
-                  </span>
-                </div>
-              </div>
-            ))}
-        </div>
-      </div>
+  // Shared empty state for the request lists
+  const renderEmptyState = () => (
+    <div className="flex flex-col items-center px-6 py-14 text-center">
+      <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-sand-200 text-ink/60" aria-hidden="true">
+        <Calendar className="h-7 w-7" />
+      </span>
+      <h3 className="mt-5 font-display text-2xl text-ink">No requests found</h3>
+      <p className="mt-2 max-w-sm text-[15px] leading-relaxed text-ink/55">
+        {[...shiftRequests, ...dayOffRequests].length === 0 ? 'Create your first request to get started.' : 'Try adjusting your search or filters.'}
+      </p>
+      {[...shiftRequests, ...dayOffRequests].length === 0 && (
+        <button type="button" onClick={() => setShowCreateModal(true)} className="btn btn-primary btn-md mt-6">
+          <Plus className="h-4 w-4" aria-hidden="true" />
+          New Request
+        </button>
+      )}
     </div>
   );
+
+  // Dashboard Overview Tab
+  const renderOverview = () => {
+    const statCards = [
+      { label: 'Shift Requests', value: dashboardStats.totalShiftRequests, icon: Zap, tile: 'bg-lavender-200 text-lavender-700' },
+      { label: 'Day Off Requests', value: dashboardStats.totalDayOffRequests, icon: CalendarDays, tile: 'bg-peach-200 text-peach-700' },
+      { label: 'Pending Shifts', value: dashboardStats.pendingShiftRequests, icon: Clock, tile: 'bg-butter-200 text-butter-700' },
+      { label: 'Pending Days Off', value: dashboardStats.pendingDayOffRequests, icon: Calendar, tile: 'bg-brand-100 text-brand-700' },
+      { label: 'Approved', value: dashboardStats.approvedRequests, icon: Check, tile: 'bg-mint-200 text-mint-700' },
+      { label: 'Rejected', value: dashboardStats.rejectedRequests, icon: X, tile: 'bg-rose-200 text-rose-700' },
+    ];
+    const recentRequests = [...filteredShiftRequests, ...filteredDayOffRequests]
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 5);
+
+    return (
+      <div className="space-y-8">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-6">
+          {statCards.map(({ label, value, icon: Icon, tile }) => (
+            <div key={label} className="stat-card p-4 sm:p-5">
+              <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${tile}`} aria-hidden="true">
+                <Icon className="h-5 w-5" />
+              </span>
+              <p className="mt-4 font-display text-3xl leading-none text-ink">{value}</p>
+              <p className="mt-2 text-sm leading-snug text-ink/55">{label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Recent Requests */}
+        <section className="app-card overflow-hidden" aria-labelledby="recent-requests-title">
+          <div className="border-b border-ink/[0.06] px-5 py-4 sm:px-6">
+            <h2 id="recent-requests-title" className="font-display text-xl text-ink">Recent Requests</h2>
+          </div>
+          {recentRequests.length > 0 ? (
+            <ul className="divide-y divide-ink/[0.06]">
+              {recentRequests.map((request) => (
+                <li key={request._id} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${request.type === 'shift' ? 'bg-lavender-200 text-lavender-700' : 'bg-peach-200 text-peach-700'}`}
+                      aria-hidden="true"
+                    >
+                      {request.type === 'shift' ? <Zap className="h-4 w-4" /> : <CalendarDays className="h-4 w-4" />}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-[15px] font-medium text-ink">{request.reason}</p>
+                      <p className="mt-0.5 text-xs text-ink/50">{formatDate(request.createdAt)}</p>
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 flex-wrap items-center gap-2 pl-[52px] sm:pl-0">
+                    <span className={`chip ${getTypeColor(request.type || (request.shiftStartDate ? 'shift' : 'dayoff'))}`}>
+                      {request.type === 'shift' ? 'Shift' : 'Day Off'}
+                    </span>
+                    <StatusBadge status={request.status === 'matched' ? 'offers_received' : request.status} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            renderEmptyState()
+          )}
+        </section>
+      </div>
+    );
+  };
 
   // Requests Management Tab
-  const renderRequests = () => (
-    <div className="space-y-6">
-      {/* Filters and Create Button */}
-      <div className="bg-white rounded-lg shadow p-4">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
-          <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <input
-                type="text"
-                placeholder="Search by reason..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-            {/* Status Filter */}
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="all">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="offers_received">Offers Received</option>
-              <option value="matched">Offered</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-            </select>
-            {/* Type Filter */}
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="all">All Types</option>
-              <option value="shift">Shift Swaps</option>
-              <option value="dayoff">Day Off Swaps</option>
-            </select>
-          </div>
-          <div className="flex space-x-2">
-            <button
-              onClick={() => {
-                loadShiftRequests();
-                loadDayOffRequests();
-              }}
-              className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </button>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              New Request
-            </button>
-          </div>
-        </div>
-      </div>
-      {/* Requests Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Request Details
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Type
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Created
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {[...filteredShiftRequests.map(req => ({ ...req, type: 'shift' })), ...filteredDayOffRequests.map(req => ({ ...req, type: 'dayoff' }))]
-                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-                .map((request) => {
-                  // const isOwnRequest = request.requesterUserId?._id === employeeData?.id; // Not used anymore
-                  return (
-                    <tr key={request._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="bg-gray-100 rounded-full p-2 mr-3">
-                            {request.type === 'shift' ? <Zap className="h-4 w-4 text-purple-600" /> : <CalendarDays className="h-4 w-4 text-orange-600" />}
-                          </div>
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">{request.reason}</div>
-                            <div className="text-sm text-gray-500">
-                              {request.type === 'shift'
-                                ? `${formatDate(request.shiftStartDate)} - ${formatDate(request.shiftEndDate)}`
-                                : `${formatDateOnly(request.originalDayOff)} → ${formatDateOnly(request.requestedDayOff)}`
-                              }
-                            </div>
-                            <div className="text-xs text-gray-400">
-                              By: {request.requesterUserId?.fullName || 'Unknown'}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(request.type)}`}>
-                          {request.type === 'shift' ? 'Shift Swap' : 'Day Off Swap'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(request.status)}`}>
-                          {request.status === 'matched'
-                            ? 'OFFERS RECEIVED'
-                            : request.status.replace('_', ' ').toUpperCase()}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(request.createdAt)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex items-center space-x-1">
-                          {/* View Button - Always available */}
-                          <button
-                            onClick={() => viewRequestDetails(request, request.type)}
-                            className="inline-flex items-center px-2 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-700 transition-colors duration-200"
-                            title="View Details"
-                          >
-                            <Eye className="h-3 w-3" />
-                          </button>
+  const renderRequests = () => {
+    const allRequests = [...filteredShiftRequests.map(req => ({ ...req, type: 'shift' })), ...filteredDayOffRequests.map(req => ({ ...req, type: 'dayoff' }))]
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const rowGrid = 'lg:grid lg:grid-cols-[minmax(0,1fr)_128px_150px_170px_136px] lg:items-center lg:gap-4';
 
-                          {canEdit(request) && (
-                            <button
-                              onClick={() => openEditModal(request, request.type)}
-                              className="inline-flex items-center px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors duration-200"
-                              title="Edit Request"
-                            >
-                              <Edit className="h-3 w-3" />
-                            </button>
-                          )}
-                          {canDelete(request) && (
-                            <button
-                              onClick={() => handleDeleteRequest(request, request.type)}
-                              disabled={actionLoading === request._id}
-                              className="inline-flex items-center px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors duration-200 disabled:opacity-50"
-                              title="Delete Request"
-                            >
-                              {actionLoading === request._id ? <Loader className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-            </tbody>
-          </table>
-        </div>
-        {[...filteredShiftRequests, ...filteredDayOffRequests].length === 0 && !isLoading && (
-          <div className="text-center py-8">
-            <Calendar className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No requests found</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              {[...shiftRequests, ...dayOffRequests].length === 0 ? 'Create your first request to get started.' : 'Try adjusting your search or filters.'}
-            </p>
+    return (
+      <div className="space-y-5">
+        {/* Filters and Create Button */}
+        <div className="app-card p-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Search */}
+              <div className="relative w-full sm:w-64">
+                <label htmlFor="request-search" className="sr-only">Search requests</label>
+                <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/40" aria-hidden="true" />
+                <input
+                  id="request-search"
+                  type="text"
+                  placeholder="Search by reason..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="field h-11 py-2 pl-10"
+                />
+              </div>
+              {/* Status Filter */}
+              <label htmlFor="request-status-filter" className="sr-only">Status</label>
+              <select
+                id="request-status-filter"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="field h-11 w-auto min-w-0 flex-1 px-3 py-2 text-sm sm:flex-none"
+              >
+                <option value="all">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="offers_received">Offers Received</option>
+                <option value="matched">Offered</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+              </select>
+              {/* Type Filter */}
+              <label htmlFor="request-type-filter" className="sr-only">Type</label>
+              <select
+                id="request-type-filter"
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                className="field h-11 w-auto min-w-0 flex-1 px-3 py-2 text-sm sm:flex-none"
+              >
+                <option value="all">All Types</option>
+                <option value="shift">Shift Swaps</option>
+                <option value="dayoff">Day Off Swaps</option>
+              </select>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  loadShiftRequests();
+                  loadDayOffRequests();
+                }}
+                className="btn btn-white btn-md flex-1 border border-ink/10 sm:flex-none"
+              >
+                <RefreshCw className="h-4 w-4" aria-hidden="true" />
+                Refresh
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(true)}
+                className="btn btn-primary btn-md flex-1 sm:flex-none"
+              >
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                New Request
+              </button>
+            </div>
           </div>
-        )}
+        </div>
+
+        {/* Requests list (table layout on large screens, stacked cards on small screens) */}
+        <div className="app-card overflow-hidden">
+          {allRequests.length > 0 && (
+            <div className={`hidden border-b border-ink/[0.06] bg-sand-100 px-6 py-3 ${rowGrid}`} aria-hidden="true">
+              <span className={EYEBROW}>Request Details</span>
+              <span className={EYEBROW}>Type</span>
+              <span className={EYEBROW}>Status</span>
+              <span className={EYEBROW}>Created</span>
+              <span className={EYEBROW}>Actions</span>
+            </div>
+          )}
+          <ul className="divide-y divide-ink/[0.06]">
+            {allRequests.map((request) => {
+              // const isOwnRequest = request.requesterUserId?._id === employeeData?.id; // Not used anymore
+              return (
+                <li key={request._id} className={`flex flex-col gap-3 px-5 py-4 transition-colors hover:bg-sand-50 sm:px-6 ${rowGrid}`}>
+                  <div className="flex min-w-0 items-start gap-3">
+                    <span
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${request.type === 'shift' ? 'bg-lavender-200 text-lavender-700' : 'bg-peach-200 text-peach-700'}`}
+                      aria-hidden="true"
+                    >
+                      {request.type === 'shift' ? <Zap className="h-4 w-4" /> : <CalendarDays className="h-4 w-4" />}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="break-words text-[15px] font-medium text-ink">{request.reason}</p>
+                      <p className="mt-0.5 text-sm text-ink/55">
+                        {request.type === 'shift'
+                          ? `${formatDate(request.shiftStartDate)} - ${formatDate(request.shiftEndDate)}`
+                          : `${formatDateOnly(request.originalDayOff)} → ${formatDateOnly(request.requestedDayOff)}`
+                        }
+                      </p>
+                      <p className="mt-0.5 text-xs text-ink/45">
+                        By: {request.requesterUserId?.fullName || 'Unknown'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 pl-[52px] lg:contents">
+                    <div>
+                      <span className={`chip ${getTypeColor(request.type)}`}>
+                        {request.type === 'shift' ? 'Shift Swap' : 'Day Off Swap'}
+                      </span>
+                    </div>
+                    <div>
+                      <StatusBadge status={request.status === 'matched' ? 'offers_received' : request.status} />
+                    </div>
+                    <div className="w-full text-xs text-ink/50 lg:w-auto lg:text-sm lg:text-ink/55">
+                      <span className="lg:hidden">Created </span>
+                      {formatDate(request.createdAt)}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 pl-[52px] lg:gap-1.5 lg:pl-0">
+                    {/* View Button - Always available */}
+                    <button
+                      type="button"
+                      onClick={() => viewRequestDetails(request, request.type)}
+                      className="btn h-10 border border-ink/10 bg-white px-4 text-[13px] text-ink hover:bg-sand-100 lg:w-10 lg:px-0"
+                      title="View Details"
+                    >
+                      <Eye className="h-4 w-4" aria-hidden="true" />
+                      <span className="lg:sr-only">View</span>
+                    </button>
+
+                    {canEdit(request) && (
+                      <button
+                        type="button"
+                        onClick={() => openEditModal(request, request.type)}
+                        className="btn h-10 bg-brand-50 px-4 text-[13px] text-brand-700 hover:bg-brand-100 lg:w-10 lg:px-0"
+                        title="Edit Request"
+                      >
+                        <Edit className="h-4 w-4" aria-hidden="true" />
+                        <span className="lg:sr-only">Edit</span>
+                      </button>
+                    )}
+                    {canDelete(request) && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteRequest(request, request.type)}
+                        disabled={actionLoading === request._id}
+                        className="btn h-10 bg-rose-100 px-4 text-[13px] text-rose-700 hover:bg-rose-200 lg:w-10 lg:px-0"
+                        title="Delete Request"
+                      >
+                        {actionLoading === request._id ? <Loader className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Trash2 className="h-4 w-4" aria-hidden="true" />}
+                        <span className="lg:sr-only">Delete</span>
+                      </button>
+                    )}
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+          {[...filteredShiftRequests, ...filteredDayOffRequests].length === 0 && !isLoading && renderEmptyState()}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   if (isLoading && shiftRequests.length === 0 && dayOffRequests.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader className="mx-auto h-8 w-8 text-blue-600 animate-spin" />
-          <p className="mt-2 text-gray-600">Loading dashboard...</p>
+      <div className="app-page flex items-center justify-center">
+        <div className="text-center" role="status">
+          <span className="mx-auto block h-10 w-10 animate-spin rounded-full border-[3px] border-brand-100 border-t-brand-500" aria-hidden="true" />
+          <p className="mt-4 text-sm text-ink/55">Loading dashboard...</p>
         </div>
       </div>
     );
   }
 
+  const pendingTotal = dashboardStats.pendingShiftRequests + dashboardStats.pendingDayOffRequests;
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="pt-2 bg-gradient-to-b from-primary-50 to-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row gap-8 sm:gap-0 sm:justify-between sm:items-center py-6">
-            <div className="flex items-center">
-              <User className="h-8 w-8 text-blue-600 mr-3" />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+    <div className="app-page">
+      {/* Page hero */}
+      <section className="app-hero">
+        <div className="container-site py-6 sm:py-8">
+          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+            <div className="flex min-w-0 items-center gap-4">
+              <span className="hidden h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-lavender-200 text-lavender-700 sm:flex" aria-hidden="true">
+                <User className="h-6 w-6" />
+              </span>
+              <div className="min-w-0">
+                <h1 className="app-title break-words">
                   Welcome, {employeeData?.fullName || 'Employee'}
                 </h1>
-                <p className="text-sm text-gray-500">{employeeData?.email || 'Your Eamil'}</p>
-                <p className="text-sm text-gray-500">{employeeData?.companyName || 'Your Company'}</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <Bell className="h-6 w-6 text-gray-600 hover:text-gray-900 cursor-pointer" />
-                {(dashboardStats.pendingShiftRequests + dashboardStats.pendingDayOffRequests) > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                    {dashboardStats.pendingShiftRequests + dashboardStats.pendingDayOffRequests}
-                  </span>
-                )}
-              </div>
-              <div className="relative group">
-                <button className="flex items-center space-x-2 text-gray-700 hover:text-gray-900">
-                  <div className="bg-blue-100 rounded-full p-2">
-                    <User className="h-4 w-4 text-blue-600" />
-                  </div>
-                  <span className="text-sm font-medium">{employeeData?.fullName}</span>
-                  <ChevronDown className="h-4 w-4" />
-                </button>
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                  >
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Logout
-                  </button>
+                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-ink/55">
+                  {employeeData?.position && (
+                    <span className="chip bg-sand-200 text-ink/70">
+                      {POSITION_LABELS[employeeData.position] || employeeData.position}
+                    </span>
+                  )}
+                  <span className="min-w-0 break-all">{employeeData?.email || 'Your email'}</span>
+                  <span className="text-ink/25" aria-hidden="true">•</span>
+                  <span>{employeeData?.companyName || 'Your Company'}</span>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </header>
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Error Message */}
-        {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="flex items-center">
-              <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-              <p className="text-red-600">{error}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-sand-200 text-ink/70" title="Pending requests">
+                <Bell className="h-5 w-5" aria-hidden="true" />
+                {pendingTotal > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1 text-[11px] font-semibold text-white">
+                    {pendingTotal}
+                    <span className="sr-only"> pending requests</span>
+                  </span>
+                )}
+              </span>
               <button
-                onClick={() => setError('')}
-                className="ml-auto text-red-500 hover:text-red-700"
+                type="button"
+                onClick={() => setShowCreateModal(true)}
+                className="btn btn-primary btn-md flex-1 md:flex-none"
               >
-                <X className="h-4 w-4" />
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                New Request
+              </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="btn btn-white btn-md border border-ink/10"
+              >
+                <LogOut className="h-4 w-4" aria-hidden="true" />
+                Log out
               </button>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Main Content */}
+      <div className="container-site py-8">
+        {/* Error Message */}
+        {error && (
+          <div className="alert alert-error mb-6" role="alert">
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
+            <p className="flex-1">{error}</p>
+            <button
+              type="button"
+              onClick={() => setError('')}
+              aria-label="Dismiss error"
+              className="-my-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-rose-200"
+            >
+              <X className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
         )}
         {/* Tabs */}
-        <div className="mb-6">
-          <nav className="flex space-x-8">
+        <div className="mb-6 inline-flex max-w-full rounded-full border border-ink/[0.07] bg-white p-1 shadow-soft">
+          <div role="tablist" aria-label="Dashboard sections" className="app-tabs">
             <button
+              type="button"
+              role="tab"
+              id="tab-overview"
+              aria-selected={activeTab === 'overview'}
               onClick={() => setActiveTab('overview')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'overview'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+              className="app-tab"
             >
               Overview
             </button>
             <button
+              type="button"
+              role="tab"
+              id="tab-requests"
+              aria-selected={activeTab === 'requests'}
               onClick={() => setActiveTab('requests')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'requests'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+              className="app-tab"
             >
               All Requests
-              {(dashboardStats.pendingShiftRequests + dashboardStats.pendingDayOffRequests) > 0 && (
-                <span className="ml-2 bg-red-100 text-red-600 py-0.5 px-2 rounded-full text-xs">
-                  {dashboardStats.pendingShiftRequests + dashboardStats.pendingDayOffRequests}
+              {pendingTotal > 0 && (
+                <span className="rounded-full bg-butter-200 px-2 py-0.5 text-xs font-semibold text-butter-700">
+                  {pendingTotal}
                 </span>
               )}
             </button>
-          </nav>
+          </div>
         </div>
         {/* Tab Content */}
-        {activeTab === 'overview' && renderOverview()}
-        {activeTab === 'requests' && renderRequests()}
-      </main>
+        <div role="tabpanel" aria-labelledby={`tab-${activeTab}`}>
+          {activeTab === 'overview' && renderOverview()}
+          {activeTab === 'requests' && renderRequests()}
+        </div>
+      </div>
+
       {/* Create Request Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-medium text-gray-900">Create New Request</h3>
-                <button
-                  onClick={() => setShowCreateModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
+        <div className="modal-backdrop">
+          <div className="modal-panel max-w-2xl" role="dialog" aria-modal="true" aria-labelledby="create-request-title">
+            <ModalHeader id="create-request-title" title="Create New Request" onClose={() => setShowCreateModal(false)} />
+            <div className="space-y-6 p-6">
               {/* Request Type Selection */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Request Type</label>
-                <div className="flex space-x-4">
-                  <label className="flex items-center">
+              <fieldset>
+                <legend className="field-label">Request Type</legend>
+                <div className="grid grid-cols-2 gap-3">
+                  <label
+                    className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 transition-colors ${createType === 'shift' ? 'border-lavender-500 bg-lavender-100' : 'border-ink/15 hover:border-ink/25'}`}
+                  >
                     <input
                       type="radio"
+                      name="create-request-type"
                       value="shift"
                       checked={createType === 'shift'}
                       onChange={(e) => setCreateType(e.target.value)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                      className="h-4 w-4 shrink-0 accent-brand-500"
                     />
-                    <span className="ml-2 text-sm text-gray-900">Shift Swap</span>
+                    <span className="text-sm font-medium text-ink">Shift Swap</span>
                   </label>
-                  <label className="flex items-center">
+                  <label
+                    className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 transition-colors ${createType === 'dayoff' ? 'border-peach-500 bg-peach-100' : 'border-ink/15 hover:border-ink/25'}`}
+                  >
                     <input
                       type="radio"
+                      name="create-request-type"
                       value="dayoff"
                       checked={createType === 'dayoff'}
                       // In your type radio buttons, add:
@@ -1149,649 +1178,633 @@ const EmployeeDashboard = () => {
                           });
                         }
                       }}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                      className="h-4 w-4 shrink-0 accent-brand-500"
                     />
-                    <span className="ml-2 text-sm text-gray-900">Day Off Swap</span>
+                    <span className="text-sm font-medium text-ink">Day Off Swap</span>
                   </label>
                 </div>
+              </fieldset>
+              {/* Reason */}
+              <div>
+                <label htmlFor="create-reason" className="field-label">
+                  Reason *
+                </label>
+                <textarea
+                  id="create-reason"
+                  value={formData.reason}
+                  onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+                  rows={3}
+                  className="field resize-none"
+                  placeholder="Explain why you need this swap..."
+                />
               </div>
-              <div className="space-y-4">
-                {/* Reason */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Reason *
-                  </label>
-                  <textarea
-                    value={formData.reason}
-                    onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                    placeholder="Explain why you need this swap..."
-                  />
-                </div>
-                {/* Day Off Specific Fields */}
-                {createType === 'dayoff' && (
-                  <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Your Original Day Off *
-                        </label>
-                        <input
-                          type="date"
-                          value={formData.originalDayOff}
-                          onChange={(e) => setFormData({ ...formData, originalDayOff: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Requested Day Off *
-                        </label>
-                        <input
-                          type="date"
-                          value={formData.requestedDayOff}
-                          onChange={(e) => setFormData({ ...formData, requestedDayOff: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </div>
-                    </div>
-                  </>
-                )}
-                {/* Shift Details (Required) */}
-                <div>
-                  <h4 className="text-md font-medium text-gray-900 mb-3">Shift Details *</h4>
-                  <div className="space-y-4">
+              {/* Day Off Specific Fields */}
+              {createType === 'dayoff' && (
+                <>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Shift Date *</label>
+                      <label htmlFor="create-original-dayoff" className="field-label">
+                        Your Original Day Off *
+                      </label>
                       <input
+                        id="create-original-dayoff"
                         type="date"
-                        value={formData.shiftDate || ''}
-                        onChange={(e) => setFormData({ ...formData, shiftDate: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        value={formData.originalDayOff}
+                        onChange={(e) => setFormData({ ...formData, originalDayOff: e.target.value })}
+                        className="field"
                       />
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Start Time *</label>
-                        <input
-                          type="time"
-                          value={formData.shiftStartTime || ''}
-                          onChange={(e) => setFormData({ ...formData, shiftStartTime: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">End Time *</label>
-                        <input
-                          type="time"
-                          value={formData.shiftEndTime || ''}
-                          onChange={(e) => setFormData({ ...formData, shiftEndTime: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </div>
+                    <div>
+                      <label htmlFor="create-requested-dayoff" className="field-label">
+                        Requested Day Off *
+                      </label>
+                      <input
+                        id="create-requested-dayoff"
+                        type="date"
+                        value={formData.requestedDayOff}
+                        onChange={(e) => setFormData({ ...formData, requestedDayOff: e.target.value })}
+                        className="field"
+                      />
                     </div>
                   </div>
-                </div>
-
-                {/* Desired Shift Details (Required for Shift Swap) */}
-                {createType === 'shift' && (
+                </>
+              )}
+              {/* Shift Details (Required) */}
+              <section>
+                <h3 className="mb-3 text-[15px] font-semibold text-ink">Shift Details *</h3>
+                <div className="space-y-4">
                   <div>
-                    <h4 className="text-md font-medium text-gray-900 mb-3">Desired Shift Details *</h4>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Desired Shift Date *</label>
-                        <input
-                          type="date"
-                          value={formData.desiredShiftDate || ''}
-                          onChange={(e) => setFormData({ ...formData, desiredShiftDate: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Desired Start Time *</label>
-                          <input
-                            type="time"
-                            value={formData.desiredShiftStartTime || ''}
-                            onChange={(e) => setFormData({ ...formData, desiredShiftStartTime: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Desired End Time *</label>
-                          <input
-                            type="time"
-                            value={formData.desiredShiftEndTime || ''}
-                            onChange={(e) => setFormData({ ...formData, desiredShiftEndTime: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Overtime Details */}
-                <div>
-                  <div className="flex items-center mb-4">
+                    <label htmlFor="create-shift-date" className="field-label">Shift Date *</label>
                     <input
-                      type="checkbox"
-                      id="showOvertime"
-                      checked={showOvertimeFields}
-                      onChange={(e) => {
-                        const showFields = e.target.checked;
-                        setShowOvertimeFields(showFields);
-                        // Clear overtime data when unchecked
-                        if (!showFields) {
-                          setFormData({
-                            ...formData,
-                            overtimeDate: '',
-                            overtimeStartTime: '',
-                            overtimeEndTime: ''
-                          });
-                        }
-                      }}
-                      className="h-4 w-4 cursor-pointer text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      id="create-shift-date"
+                      type="date"
+                      value={formData.shiftDate || ''}
+                      onChange={(e) => setFormData({ ...formData, shiftDate: e.target.value })}
+                      className="field"
                     />
-                    <label htmlFor="showOvertime" className="ml-2 cursor-pointer text-md font-medium text-gray-900">
-                      Do you have Overtime?
-                    </label>
                   </div>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor="create-shift-start" className="field-label">Start Time *</label>
+                      <input
+                        id="create-shift-start"
+                        type="time"
+                        value={formData.shiftStartTime || ''}
+                        onChange={(e) => setFormData({ ...formData, shiftStartTime: e.target.value })}
+                        className="field"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="create-shift-end" className="field-label">End Time *</label>
+                      <input
+                        id="create-shift-end"
+                        type="time"
+                        value={formData.shiftEndTime || ''}
+                        onChange={(e) => setFormData({ ...formData, shiftEndTime: e.target.value })}
+                        className="field"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </section>
 
-                  {showOvertimeFields && (
-                    <div className="space-y-4 ml-6">
-                      {/* Overtime Date (same as shift date) */}
+              {/* Desired Shift Details (Required for Shift Swap) */}
+              {createType === 'shift' && (
+                <section>
+                  <h3 className="mb-3 text-[15px] font-semibold text-ink">Desired Shift Details *</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label htmlFor="create-desired-date" className="field-label">Desired Shift Date *</label>
+                      <input
+                        id="create-desired-date"
+                        type="date"
+                        value={formData.desiredShiftDate || ''}
+                        onChange={(e) => setFormData({ ...formData, desiredShiftDate: e.target.value })}
+                        className="field"
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Overtime Date</label>
+                        <label htmlFor="create-desired-start" className="field-label">Desired Start Time *</label>
                         <input
-                          type="date"
-                          value={formData.overtimeDate || formData.shiftDate || ''}
-                          onChange={(e) => setFormData({ ...formData, overtimeDate: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="Same as shift date if left empty"
+                          id="create-desired-start"
+                          type="time"
+                          value={formData.desiredShiftStartTime || ''}
+                          onChange={(e) => setFormData({ ...formData, desiredShiftStartTime: e.target.value })}
+                          className="field"
                         />
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Start Time</label>
-                          <input
-                            type="time"
-                            value={formData.overtimeStartTime || ''}
-                            onChange={(e) => setFormData({ ...formData, overtimeStartTime: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">End Time</label>
-                          <input
-                            type="time"
-                            value={formData.overtimeEndTime || ''}
-                            onChange={(e) => setFormData({ ...formData, overtimeEndTime: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </div>
+                      <div>
+                        <label htmlFor="create-desired-end" className="field-label">Desired End Time *</label>
+                        <input
+                          id="create-desired-end"
+                          type="time"
+                          value={formData.desiredShiftEndTime || ''}
+                          onChange={(e) => setFormData({ ...formData, desiredShiftEndTime: e.target.value })}
+                          className="field"
+                        />
                       </div>
                     </div>
-                  )}
+                  </div>
+                </section>
+              )}
+
+              {/* Overtime Details */}
+              <section>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="showOvertime"
+                    checked={showOvertimeFields}
+                    onChange={(e) => {
+                      const showFields = e.target.checked;
+                      setShowOvertimeFields(showFields);
+                      // Clear overtime data when unchecked
+                      if (!showFields) {
+                        setFormData({
+                          ...formData,
+                          overtimeDate: '',
+                          overtimeStartTime: '',
+                          overtimeEndTime: ''
+                        });
+                      }
+                    }}
+                    className="h-5 w-5 shrink-0 cursor-pointer rounded accent-brand-500"
+                  />
+                  <label htmlFor="showOvertime" className="cursor-pointer text-[15px] font-semibold text-ink">
+                    Do you have Overtime?
+                  </label>
                 </div>
-                {error && (
-                  <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-                    <div className="flex items-center">
-                      <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-                      <p className="text-red-600">{error}</p>
-                      <button
-                        onClick={() => setError('')}
-                        className="ml-auto text-red-500 hover:text-red-700"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
+
+                {showOvertimeFields && (
+                  <div className="mt-4 space-y-4 rounded-2xl bg-sand-100 p-4">
+                    {/* Overtime Date (same as shift date) */}
+                    <div>
+                      <label htmlFor="create-ot-date" className="field-label">Overtime Date</label>
+                      <input
+                        id="create-ot-date"
+                        type="date"
+                        value={formData.overtimeDate || formData.shiftDate || ''}
+                        onChange={(e) => setFormData({ ...formData, overtimeDate: e.target.value })}
+                        className="field"
+                        placeholder="Same as shift date if left empty"
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div>
+                        <label htmlFor="create-ot-start" className="field-label">Start Time</label>
+                        <input
+                          id="create-ot-start"
+                          type="time"
+                          value={formData.overtimeStartTime || ''}
+                          onChange={(e) => setFormData({ ...formData, overtimeStartTime: e.target.value })}
+                          className="field"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="create-ot-end" className="field-label">End Time</label>
+                        <input
+                          id="create-ot-end"
+                          type="time"
+                          value={formData.overtimeEndTime || ''}
+                          onChange={(e) => setFormData({ ...formData, overtimeEndTime: e.target.value })}
+                          className="field"
+                        />
+                      </div>
                     </div>
                   </div>
                 )}
-                {/* Action Buttons */}
-                <div className="flex justify-end space-x-3 pt-4 border-t">
+              </section>
+              {error && (
+                <div className="alert alert-error" role="alert">
+                  <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
+                  <p className="flex-1">{error}</p>
                   <button
-                    onClick={() => setShowCreateModal(false)}
-                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors duration-200"
+                    type="button"
+                    onClick={() => setError('')}
+                    aria-label="Dismiss error"
+                    className="-my-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-rose-200"
                   >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleCreateRequest}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Request
+                    <X className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </div>
-              </div>
+              )}
             </div>
+            {/* Action Buttons */}
+            <ModalFooter>
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(false)}
+                className="btn btn-white btn-md border border-ink/10"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateRequest}
+                className="btn btn-primary btn-md"
+              >
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                Create Request
+              </button>
+            </ModalFooter>
           </div>
         </div>
       )}
       {/* Edit Request Modal */}
       {showEditModal && selectedRequest && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-medium text-gray-900">Edit Request</h3>
-                <button
-                  onClick={() => setShowEditModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+        <div className="modal-backdrop">
+          <div className="modal-panel max-w-2xl" role="dialog" aria-modal="true" aria-labelledby="edit-request-title">
+            <ModalHeader id="edit-request-title" title="Edit Request" onClose={() => setShowEditModal(false)} />
+            <div className="space-y-6 p-6">
+              {/* Reason */}
+              <div>
+                <label htmlFor="edit-reason" className="field-label">
+                  Reason *
+                </label>
+                <textarea
+                  id="edit-reason"
+                  value={formData.reason}
+                  onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+                  rows={3}
+                  className="field resize-none"
+                  placeholder="Explain why you need this swap..."
+                />
               </div>
-              <div className="space-y-4">
-                {/* Reason */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Reason *
-                  </label>
-                  <textarea
-                    value={formData.reason}
-                    onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                    placeholder="Explain why you need this swap..."
-                  />
-                </div>
-                {/* Shift Details (only for shift requests) */}
-                {selectedRequest.type === 'shift' && (
-                  <>
-                    <div>
-                      <h4 className="text-md font-medium text-gray-900 mb-3">Shift Details *</h4>
-                      <div className="space-y-4">
-                        {/* Shift Date */}
+              {/* Shift Details (only for shift requests) */}
+              {selectedRequest.type === 'shift' && (
+                <>
+                  <section>
+                    <h3 className="mb-3 text-[15px] font-semibold text-ink">Shift Details *</h3>
+                    <div className="space-y-4">
+                      {/* Shift Date */}
+                      <div>
+                        <label htmlFor="edit-shift-date" className="field-label">Shift Date *</label>
+                        <input
+                          id="edit-shift-date"
+                          type="date"
+                          value={formData.shiftDate}
+                          onChange={(e) => setFormData({ ...formData, shiftDate: e.target.value })}
+                          className="field"
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Shift Date *</label>
+                          <label htmlFor="edit-shift-start" className="field-label">Start Time *</label>
                           <input
-                            type="date"
-                            value={formData.shiftDate}
-                            onChange={(e) => setFormData({ ...formData, shiftDate: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            id="edit-shift-start"
+                            type="time"
+                            value={formData.shiftStartTime}
+                            onChange={(e) => setFormData({ ...formData, shiftStartTime: e.target.value })}
+                            className="field"
                           />
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Start Time *</label>
-                            <input
-                              type="time"
-                              value={formData.shiftStartTime}
-                              onChange={(e) => setFormData({ ...formData, shiftStartTime: e.target.value })}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">End Time *</label>
-                            <input
-                              type="time"
-                              value={formData.shiftEndTime}
-                              onChange={(e) => setFormData({ ...formData, shiftEndTime: e.target.value })}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                          </div>
+                        <div>
+                          <label htmlFor="edit-shift-end" className="field-label">End Time *</label>
+                          <input
+                            id="edit-shift-end"
+                            type="time"
+                            value={formData.shiftEndTime}
+                            onChange={(e) => setFormData({ ...formData, shiftEndTime: e.target.value })}
+                            className="field"
+                          />
                         </div>
                       </div>
                     </div>
+                  </section>
 
-                    {/* Desired Shift Details */}
-                    <div>
-                      <h4 className="text-md font-medium text-gray-900 mb-3">Desired Shift Details *</h4>
-                      <div className="space-y-4">
+                  {/* Desired Shift Details */}
+                  <section>
+                    <h3 className="mb-3 text-[15px] font-semibold text-ink">Desired Shift Details *</h3>
+                    <div className="space-y-4">
+                      <div>
+                        <label htmlFor="edit-desired-date" className="field-label">Desired Shift Date *</label>
+                        <input
+                          id="edit-desired-date"
+                          type="date"
+                          value={formData.desiredShiftDate}
+                          onChange={(e) => setFormData({ ...formData, desiredShiftDate: e.target.value })}
+                          className="field"
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Desired Shift Date *</label>
+                          <label htmlFor="edit-desired-start" className="field-label">Desired Start Time *</label>
                           <input
-                            type="date"
-                            value={formData.desiredShiftDate}
-                            onChange={(e) => setFormData({ ...formData, desiredShiftDate: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            id="edit-desired-start"
+                            type="time"
+                            value={formData.desiredShiftStartTime}
+                            onChange={(e) => setFormData({ ...formData, desiredShiftStartTime: e.target.value })}
+                            className="field"
                           />
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Desired Start Time *</label>
-                            <input
-                              type="time"
-                              value={formData.desiredShiftStartTime}
-                              onChange={(e) => setFormData({ ...formData, desiredShiftStartTime: e.target.value })}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Desired End Time *</label>
-                            <input
-                              type="time"
-                              value={formData.desiredShiftEndTime}
-                              onChange={(e) => setFormData({ ...formData, desiredShiftEndTime: e.target.value })}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                          </div>
+                        <div>
+                          <label htmlFor="edit-desired-end" className="field-label">Desired End Time *</label>
+                          <input
+                            id="edit-desired-end"
+                            type="time"
+                            value={formData.desiredShiftEndTime}
+                            onChange={(e) => setFormData({ ...formData, desiredShiftEndTime: e.target.value })}
+                            className="field"
+                          />
                         </div>
                       </div>
                     </div>
+                  </section>
 
-                    {/* Overtime Details */}
-                    <div>
-                      <h4 className="text-md font-medium text-gray-900 mb-3">Do you have Overtime? (Optional)</h4>
-                      <div className="space-y-4">
+                  {/* Overtime Details */}
+                  <section className="rounded-2xl bg-sand-100 p-4">
+                    <h3 className="mb-3 text-[15px] font-semibold text-ink">Do you have Overtime? (Optional)</h3>
+                    <div className="space-y-4">
+                      <div>
+                        <label htmlFor="edit-ot-date" className="field-label">Overtime Date</label>
+                        <input
+                          id="edit-ot-date"
+                          type="date"
+                          value={formData.overtimeDate || formData.shiftDate || ''}
+                          onChange={(e) => setFormData({ ...formData, overtimeDate: e.target.value })}
+                          className="field"
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Overtime Date</label>
+                          <label htmlFor="edit-ot-start" className="field-label">Start Time</label>
                           <input
-                            type="date"
-                            value={formData.overtimeDate || formData.shiftDate || ''}
-                            onChange={(e) => setFormData({ ...formData, overtimeDate: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            id="edit-ot-start"
+                            type="time"
+                            value={formData.overtimeStartTime || ''}
+                            onChange={(e) => setFormData({ ...formData, overtimeStartTime: e.target.value })}
+                            className="field"
                           />
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Start Time</label>
-                            <input
-                              type="time"
-                              value={formData.overtimeStartTime || ''}
-                              onChange={(e) => setFormData({ ...formData, overtimeStartTime: e.target.value })}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">End Time</label>
-                            <input
-                              type="time"
-                              value={formData.overtimeEndTime || ''}
-                              onChange={(e) => setFormData({ ...formData, overtimeEndTime: e.target.value })}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                          </div>
+                        <div>
+                          <label htmlFor="edit-ot-end" className="field-label">End Time</label>
+                          <input
+                            id="edit-ot-end"
+                            type="time"
+                            value={formData.overtimeEndTime || ''}
+                            onChange={(e) => setFormData({ ...formData, overtimeEndTime: e.target.value })}
+                            className="field"
+                          />
                         </div>
                       </div>
                     </div>
-                  </>
-                )}
-                {/* Action Buttons */}
-                <div className="flex justify-end space-x-3 pt-4 border-t">
+                  </section>
+                </>
+              )}
+              {error && (
+                <div className="alert alert-error" role="alert">
+                  <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
+                  <p className="flex-1">{error}</p>
                   <button
-                    onClick={() => setShowEditModal(false)}
-                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors duration-200"
+                    type="button"
+                    onClick={() => setError('')}
+                    aria-label="Dismiss error"
+                    className="-my-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-rose-200"
                   >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleUpdateRequest}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center"
-                  >
-                    <Edit className="h-4 w-4 mr-2" />
-                    Update Request
+                    <X className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </div>
-              </div>
+              )}
             </div>
+            {/* Action Buttons */}
+            <ModalFooter>
+              <button
+                type="button"
+                onClick={() => setShowEditModal(false)}
+                className="btn btn-white btn-md border border-ink/10"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleUpdateRequest}
+                className="btn btn-primary btn-md"
+              >
+                <Edit className="h-4 w-4" aria-hidden="true" />
+                Update Request
+              </button>
+            </ModalFooter>
           </div>
         </div>
       )}
       {/* View Request Modal */}
       {showViewModal && selectedRequest && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-10 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-medium text-gray-900">Request Details</h3>
-                <button
-                  onClick={() => setShowViewModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-              <div className="space-y-4">
-                {/* Request Information */}
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h4 className="font-medium text-gray-900 mb-3">Request Information</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">ID</label>
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(selectedRequest._id)}`}>
-                        {selectedRequest._id}
-                      </span>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">Type</label>
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(selectedRequest.type)}`}>
-                        {selectedRequest.type === 'shift' ? 'Shift Swap' : 'Day Off Swap'}
-                      </span>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">Status</label>
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(selectedRequest.status)}`}>
-                        {selectedRequest.status.replace('_', ' ').toUpperCase()}
-                      </span>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">Requested By</label>
-                      <p className="text-sm text-gray-900">{selectedRequest.requesterUserId?.fullName || 'Unknown'}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">Created</label>
-                      <p className="text-sm text-gray-900">{formatDate(selectedRequest.createdAt)}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">Reason</label>
-                      <p className="text-sm text-gray-900">{selectedRequest.reason}</p>
-                    </div>
-                  </div>
-                </div>
-                {/* Day Off Details (for day off requests) */}
-                {selectedRequest.type === 'dayoff' && (
-                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                    <h4 className="font-medium text-orange-900 mb-3">Day Off Details</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-orange-700">Original Day Off</label>
-                        <p className="text-sm text-orange-900">{formatDateOnly(selectedRequest.originalDayOff)}</p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-orange-700">Requested Day Off</label>
-                        <p className="text-sm text-orange-900">{formatDateOnly(selectedRequest.requestedDayOff)}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {/* Shift Details */}
-                {(selectedRequest.shiftStartDate || selectedRequest.shiftEndDate) && (
-                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                    <h4 className="font-medium text-purple-900 mb-3">Shift Details</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {selectedRequest.shiftStartDate && (
-                        <div>
-                          <label className="block text-sm font-medium text-purple-700">Shift Start</label>
-                          <p className="text-sm text-purple-900">{formatDate(selectedRequest.shiftStartDate)}</p>
-                        </div>
-                      )}
-                      {selectedRequest.shiftEndDate && (
-                        <div>
-                          <label className="block text-sm font-medium text-purple-700">Shift End</label>
-                          <p className="text-sm text-purple-900">{formatDate(selectedRequest.shiftEndDate)}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-                {/* Desired Shift Details */}
-                {(selectedRequest.desiredShiftStartDate || selectedRequest.desiredShiftEndDate) && (
-                  <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
-                    <h4 className="font-medium text-indigo-900 mb-3">Desired Shift Details</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {selectedRequest.desiredShiftStartDate && (
-                        <div>
-                          <label className="block text-sm font-medium text-indigo-700">Desired Shift Start</label>
-                          <p className="text-sm text-indigo-900">{formatDate(selectedRequest.desiredShiftStartDate)}</p>
-                        </div>
-                      )}
-                      {selectedRequest.desiredShiftEndDate && (
-                        <div>
-                          <label className="block text-sm font-medium text-indigo-700">Desired Shift End</label>
-                          <p className="text-sm text-indigo-900">{formatDate(selectedRequest.desiredShiftEndDate)}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-                {/* Overtime Details */}
-                {(selectedRequest.overtimeStart || selectedRequest.overtimeEnd) && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 className="font-medium text-blue-900 mb-3">Overtime Details</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {selectedRequest.overtimeStart && (
-                        <div>
-                          <label className="block text-sm font-medium text-blue-700">Overtime Start</label>
-                          <p className="text-sm text-blue-900">{formatDate(selectedRequest.overtimeStart)}</p>
-                        </div>
-                      )}
-                      {selectedRequest.overtimeEnd && (
-                        <div>
-                          <label className="block text-sm font-medium text-blue-700">Overtime End</label>
-                          <p className="text-sm text-blue-900">{formatDate(selectedRequest.overtimeEnd)}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-                {/* Offers/Matches Section */}
-                {selectedRequest.type === 'shift' && selectedRequest.negotiationHistory && selectedRequest.negotiationHistory.length > 0 && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <h4 className="font-medium text-green-900 mb-3">Offers ({selectedRequest.negotiationHistory.length})</h4>
-                    <div className="space-y-3">
-                      {selectedRequest.negotiationHistory.map((offer, index) => (
-                        <div key={index} className="bg-white rounded p-3 border border-green-200">
-                          <div className="flex justify-between items-start mb-2">
-                            <div>
-                              <p className="text-sm font-medium text-gray-900">
-                                {offer.offeredBy?.fullName || 'Unknown Employee'}
+        <div className="modal-backdrop">
+          <div className="modal-panel max-w-2xl" role="dialog" aria-modal="true" aria-labelledby="view-request-title">
+            <ModalHeader id="view-request-title" title="Request Details" onClose={() => setShowViewModal(false)} />
+            <div className="space-y-4 p-6">
+              {/* Request Information */}
+              <DetailSection title="Request Information">
+                <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Detail label="ID" className="sm:col-span-2">
+                    <code className="break-all text-xs text-ink/70">{selectedRequest._id}</code>
+                  </Detail>
+                  <Detail label="Type">
+                    <span className={`chip ${getTypeColor(selectedRequest.type)}`}>
+                      {selectedRequest.type === 'shift' ? 'Shift Swap' : 'Day Off Swap'}
+                    </span>
+                  </Detail>
+                  <Detail label="Status">
+                    <StatusBadge status={selectedRequest.status} />
+                  </Detail>
+                  <Detail label="Requested By">{selectedRequest.requesterUserId?.fullName || 'Unknown'}</Detail>
+                  <Detail label="Created">{formatDate(selectedRequest.createdAt)}</Detail>
+                  <Detail label="Reason" className="sm:col-span-2">
+                    <span className="break-words">{selectedRequest.reason}</span>
+                  </Detail>
+                </dl>
+              </DetailSection>
+              {/* Day Off Details (for day off requests) */}
+              {selectedRequest.type === 'dayoff' && (
+                <DetailSection title="Day Off Details" tone="bg-peach-100" titleClass="text-peach-700">
+                  <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <Detail label="Original Day Off">{formatDateOnly(selectedRequest.originalDayOff)}</Detail>
+                    <Detail label="Requested Day Off">{formatDateOnly(selectedRequest.requestedDayOff)}</Detail>
+                  </dl>
+                </DetailSection>
+              )}
+              {/* Shift Details */}
+              {(selectedRequest.shiftStartDate || selectedRequest.shiftEndDate) && (
+                <DetailSection title="Shift Details" tone="bg-lavender-100" titleClass="text-lavender-700">
+                  <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    {selectedRequest.shiftStartDate && (
+                      <Detail label="Shift Start">{formatDate(selectedRequest.shiftStartDate)}</Detail>
+                    )}
+                    {selectedRequest.shiftEndDate && (
+                      <Detail label="Shift End">{formatDate(selectedRequest.shiftEndDate)}</Detail>
+                    )}
+                  </dl>
+                </DetailSection>
+              )}
+              {/* Desired Shift Details */}
+              {(selectedRequest.desiredShiftStartDate || selectedRequest.desiredShiftEndDate) && (
+                <DetailSection title="Desired Shift Details" tone="bg-brand-50" titleClass="text-brand-700">
+                  <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    {selectedRequest.desiredShiftStartDate && (
+                      <Detail label="Desired Shift Start">{formatDate(selectedRequest.desiredShiftStartDate)}</Detail>
+                    )}
+                    {selectedRequest.desiredShiftEndDate && (
+                      <Detail label="Desired Shift End">{formatDate(selectedRequest.desiredShiftEndDate)}</Detail>
+                    )}
+                  </dl>
+                </DetailSection>
+              )}
+              {/* Overtime Details */}
+              {(selectedRequest.overtimeStart || selectedRequest.overtimeEnd) && (
+                <DetailSection title="Overtime Details" tone="bg-butter-100" titleClass="text-butter-700">
+                  <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    {selectedRequest.overtimeStart && (
+                      <Detail label="Overtime Start">{formatDate(selectedRequest.overtimeStart)}</Detail>
+                    )}
+                    {selectedRequest.overtimeEnd && (
+                      <Detail label="Overtime End">{formatDate(selectedRequest.overtimeEnd)}</Detail>
+                    )}
+                  </dl>
+                </DetailSection>
+              )}
+              {/* Offers/Matches Section */}
+              {selectedRequest.type === 'shift' && selectedRequest.negotiationHistory && selectedRequest.negotiationHistory.length > 0 && (
+                <DetailSection title={`Offers (${selectedRequest.negotiationHistory.length})`} tone="border border-ink/[0.07] bg-white">
+                  <ul className="space-y-3">
+                    {selectedRequest.negotiationHistory.map((offer, index) => (
+                      <li key={index} className="rounded-xl border border-ink/[0.07] bg-sand-50 p-4">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-ink">
+                              {offer.offeredBy?.fullName || 'Unknown Employee'}
+                            </p>
+                            <p className="break-all text-xs text-ink/55">{offer.offeredBy?.email || 'Unknown Email'}</p>
+                            <p className="mt-2 text-xs text-ink/60">
+                              {formatDate(offer.shiftStartDate)} - {formatDate(offer.shiftEndDate)}
+                            </p>
+                            {offer.overtimeStart && (
+                              <p className="mt-0.5 text-xs text-ink/60">
+                                Overtime: {formatDate(offer.overtimeStart)} - {formatDate(offer.overtimeEnd)}
                               </p>
-                              <span className='my-2'>{offer.offeredBy?.email || 'Unknown Email'}</span>
-                              <p className="text-xs text-gray-500">
-                                {formatDate(offer.shiftStartDate)} - {formatDate(offer.shiftEndDate)}
-                              </p>
-                              {offer.overtimeStart && (
-                                <p className="text-xs text-gray-500">
-                                  Overtime: {formatDate(offer.overtimeStart)} - {formatDate(offer.overtimeEnd)}
-                                </p>
+                            )}
+                          </div>
+                          <div className="flex shrink-0 items-center gap-2">
+                            <span className={`chip capitalize ${offer.status === 'accepted' ? 'bg-mint-200 text-mint-700' :
+                              offer.status === 'rejected' ? 'bg-rose-200 text-rose-700' :
+                                'bg-butter-200 text-butter-700'
+                              }`}>
+                              {offer.status}
+                            </span>
+                            {/* Only show Accept button if user is the requester and the offer is from someone else */}
+                            {offer.status === 'offered' &&
+                              employeeData?._id === selectedRequest.requesterUserId?._id &&
+                              offer.offeredBy?._id !== employeeData?._id && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleAcceptOffer(offer._id)}
+                                  disabled={actionLoading === offer._id}
+                                  className="btn btn-primary btn-sm"
+                                >
+                                  {actionLoading === offer._id ? <Loader className="h-4 w-4 animate-spin" aria-label="Accepting" /> : 'Accept'}
+                                </button>
                               )}
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${offer.status === 'accepted' ? 'bg-green-100 text-green-800' :
-                                offer.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                                  'bg-yellow-100 text-yellow-800'
-                                }`}>
-                                {offer.status.toUpperCase()}
-                              </span>
-                              {/* Only show Accept button if user is the requester and the offer is from someone else */}
-                              {offer.status === 'offered' &&
-                                employeeData?._id === selectedRequest.requesterUserId?._id &&
-                                offer.offeredBy?._id !== employeeData?._id && (
-                                  <button
-                                    onClick={() => handleAcceptOffer(offer._id)}
-                                    disabled={actionLoading === offer._id}
-                                    className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors duration-200 disabled:opacity-50"
-                                  >
-                                    {actionLoading === offer._id ? <Loader className="h-3 w-3 animate-spin" /> : 'Accept'}
-                                  </button>
-                                )}
-                            </div>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {selectedRequest.type === 'dayoff' && selectedRequest.matches && selectedRequest.matches.length > 0 && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <h4 className="font-medium text-green-900 mb-3">Matches ({selectedRequest.matches.length})</h4>
-                    <div className="space-y-3">
-                      {selectedRequest.matches.map((match, index) => (
-                        <div key={index} className="bg-white rounded p-3 border border-green-200">
-                          <div className="flex justify-between items-start mb-2">
-                            <div>
-                              <p className="text-sm font-medium text-gray-900">
-                                {match.matchedBy?.fullName || 'Unknown Employee'}
+                      </li>
+                    ))}
+                  </ul>
+                </DetailSection>
+              )}
+              {selectedRequest.type === 'dayoff' && selectedRequest.matches && selectedRequest.matches.length > 0 && (
+                <DetailSection title={`Matches (${selectedRequest.matches.length})`} tone="border border-ink/[0.07] bg-white">
+                  <ul className="space-y-3">
+                    {selectedRequest.matches.map((match, index) => (
+                      <li key={index} className="rounded-xl border border-ink/[0.07] bg-sand-50 p-4">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-ink">
+                              {match.matchedBy?.fullName || 'Unknown Employee'}
+                            </p>
+                            <p className="mt-1 text-xs text-ink/60">
+                              Original day off: {formatDateOnly(match.originalDayOff)}
+                            </p>
+                            {match.shiftStartDate && (
+                              <p className="mt-0.5 text-xs text-ink/60">
+                                Shift: {formatDate(match.shiftStartDate)} - {formatDate(match.shiftEndDate)}
                               </p>
-                              <p className="text-xs text-gray-500">
-                                Original day off: {formatDateOnly(match.originalDayOff)}
-                              </p>
-                              {match.shiftStartDate && (
-                                <p className="text-xs text-gray-500">
-                                  Shift: {formatDate(match.shiftStartDate)} - {formatDate(match.shiftEndDate)}
-                                </p>
+                            )}
+                          </div>
+                          <div className="flex shrink-0 items-center gap-2">
+                            <span className={`chip capitalize ${match.status === 'accepted' ? 'bg-mint-200 text-mint-700' :
+                              match.status === 'rejected' ? 'bg-rose-200 text-rose-700' :
+                                'bg-butter-200 text-butter-700'
+                              }`}>
+                              {match.status}
+                            </span>
+                            {/* Only show Accept button if user is the requester and the match is from someone else */}
+                            {match.status === 'proposed' &&
+                              employeeData?._id === selectedRequest.requesterUserId?._id &&
+                              match.matchedBy?._id !== employeeData?._id && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleAcceptMatch(match._id)}
+                                  disabled={actionLoading === match._id}
+                                  className="btn btn-primary btn-sm"
+                                >
+                                  {actionLoading === match._id ? <Loader className="h-4 w-4 animate-spin" aria-label="Accepting" /> : 'Accept'}
+                                </button>
                               )}
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${match.status === 'accepted' ? 'bg-green-100 text-green-800' :
-                                match.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                                  'bg-yellow-100 text-yellow-800'
-                                }`}>
-                                {match.status.toUpperCase()}
-                              </span>
-                              {/* Only show Accept button if user is the requester and the match is from someone else */}
-                              {match.status === 'proposed' &&
-                                employeeData?._id === selectedRequest.requesterUserId?._id &&
-                                match.matchedBy?._id !== employeeData?._id && (
-                                  <button
-                                    onClick={() => handleAcceptMatch(match._id)}
-                                    disabled={actionLoading === match._id}
-                                    className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors duration-200 disabled:opacity-50"
-                                  >
-                                    {actionLoading === match._id ? <Loader className="h-3 w-3 animate-spin" /> : 'Accept'}
-                                  </button>
-                                )}
-                            </div>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {/* Rejection/Approval Comment */}
-                {(selectedRequest.status === 'rejected' || selectedRequest.status === 'approved') && selectedRequest.comment && (
-                  <div className={`${selectedRequest.status === 'rejected' ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'} border rounded-lg p-4`}>
-                    <h4 className={`font-medium ${selectedRequest.status === 'rejected' ? 'text-red-900' : 'text-green-900'} mb-2`}>
-                      {selectedRequest.status === 'rejected' ? 'Rejection' : 'Approval'} Comment
-                    </h4>
-                    <p className={`text-sm ${selectedRequest.status === 'rejected' ? 'text-red-800' : 'text-green-800'}`}>
-                      {selectedRequest.comment}
-                    </p>
-                  </div>
-                )}
-                {/* Action Buttons - Only for Own Requests */}
-                <div className="flex justify-end space-x-3 pt-4 border-t">
-                  {canEdit(selectedRequest) && (
-                    <button
-                      onClick={() => {
-                        setShowViewModal(false);
-                        openEditModal(selectedRequest, selectedRequest.type);
-                      }}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center"
-                    >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit Request
-                    </button>
-                  )}
-                  {canDelete(selectedRequest) && (
-                    <button
-                      onClick={() => {
-                        setShowViewModal(false);
-                        handleDeleteRequest(selectedRequest, selectedRequest.type);
-                      }}
-                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 flex items-center"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete Request
-                    </button>
-                  )}
+                      </li>
+                    ))}
+                  </ul>
+                </DetailSection>
+              )}
+              {/* Rejection/Approval Comment */}
+              {(selectedRequest.status === 'rejected' || selectedRequest.status === 'approved') && selectedRequest.comment && (
+                <div className={`${selectedRequest.status === 'rejected' ? 'border-rose-300 bg-rose-100' : 'border-mint-300 bg-mint-100'} rounded-2xl border p-4 sm:p-5`}>
+                  <h3 className={`mb-2 text-[15px] font-semibold ${selectedRequest.status === 'rejected' ? 'text-rose-700' : 'text-mint-700'}`}>
+                    {selectedRequest.status === 'rejected' ? 'Rejection' : 'Approval'} Comment
+                  </h3>
+                  <p className="break-words text-sm text-ink/80">
+                    {selectedRequest.comment}
+                  </p>
                 </div>
-              </div>
+              )}
             </div>
+            {/* Action Buttons - Only for Own Requests */}
+            <ModalFooter>
+              <button
+                type="button"
+                onClick={() => setShowViewModal(false)}
+                className="btn btn-white btn-md border border-ink/10"
+              >
+                Close
+              </button>
+              {canDelete(selectedRequest) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowViewModal(false);
+                    handleDeleteRequest(selectedRequest, selectedRequest.type);
+                  }}
+                  className="btn btn-danger btn-md"
+                >
+                  <Trash2 className="h-4 w-4" aria-hidden="true" />
+                  Delete Request
+                </button>
+              )}
+              {canEdit(selectedRequest) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowViewModal(false);
+                    openEditModal(selectedRequest, selectedRequest.type);
+                  }}
+                  className="btn btn-primary btn-md"
+                >
+                  <Edit className="h-4 w-4" aria-hidden="true" />
+                  Edit Request
+                </button>
+              )}
+            </ModalFooter>
           </div>
         </div>
       )}

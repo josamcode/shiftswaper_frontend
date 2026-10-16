@@ -7,21 +7,54 @@ import {
   Eye,
   Search,
   Filter,
-  Users,
-  Handshake,
   CalendarDays,
   X,
   Plus,
-  Loader,
   AlertCircle,
-  ChevronDown,
   User,
   ArrowRight,
   MessageSquare,
   CheckCircle,
   ArrowLeftRight
 } from 'lucide-react';
-import Swal from 'sweetalert2';
+import { StatusBadge, UrgencyBadge } from '../components/product/Mockups';
+
+/* Presentational helpers ------------------------------------------------ */
+const EYEBROW = 'text-[12px] font-semibold uppercase tracking-[0.12em] text-ink/45';
+
+const ModalHeader = ({ id, title, onClose }) => (
+  <div className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-ink/[0.07] bg-white px-6 py-4">
+    <h2 id={id} className="font-display text-[22px] leading-tight text-ink sm:text-2xl">{title}</h2>
+    <button
+      type="button"
+      onClick={onClose}
+      aria-label="Close"
+      className="-mr-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink/55 transition-colors hover:bg-ink/5 hover:text-ink"
+    >
+      <X className="h-5 w-5" aria-hidden="true" />
+    </button>
+  </div>
+);
+
+const ModalFooter = ({ children }) => (
+  <div className="sticky bottom-0 z-10 flex flex-col-reverse gap-2 border-t border-ink/[0.07] bg-white px-6 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 sm:flex-row sm:justify-end">
+    {children}
+  </div>
+);
+
+const DetailSection = ({ title, tone = 'bg-sand-100', titleClass = 'text-ink/45', children }) => (
+  <section className={`rounded-2xl p-4 sm:p-5 ${tone}`}>
+    <h3 className={`mb-3 text-[12px] font-semibold uppercase tracking-[0.12em] ${titleClass}`}>{title}</h3>
+    {children}
+  </section>
+);
+
+const Detail = ({ label, className = '', children }) => (
+  <div className={className}>
+    <dt className="text-xs font-medium text-ink/50">{label}</dt>
+    <dd className="mt-1 text-sm text-ink">{children}</dd>
+  </div>
+);
 
 const DayOffSwapsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -65,6 +98,18 @@ const DayOffSwapsPage = () => {
   useEffect(() => {
     filterAndSortRequests();
   }, [dayOffRequests, searchTerm, statusFilter, sortBy, dateFilterStart, dateFilterEnd, dateFilterType]);
+
+  // Escape closes an open modal (same as its close button).
+  useEffect(() => {
+    if (!showViewModal && !showMatchModal) return undefined;
+    const onKeyDown = (e) => {
+      if (e.key !== 'Escape') return;
+      setShowViewModal(false);
+      setShowMatchModal(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [showViewModal, showMatchModal]);
 
   const loadEmployeeData = () => {
     try {
@@ -233,7 +278,7 @@ const DayOffSwapsPage = () => {
 
   const showSuccessMessage = (message) => {
     const successElement = document.createElement('div');
-    successElement.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+    successElement.className = 'fixed left-4 right-4 top-[86px] z-[70] rounded-2xl bg-ink px-4 py-3 text-sm font-medium text-white shadow-float animate-slide-down sm:left-auto sm:max-w-sm';
     successElement.textContent = message;
     document.body.appendChild(successElement);
     setTimeout(() => {
@@ -377,26 +422,6 @@ const DayOffSwapsPage = () => {
     setShowViewModal(true);
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'matched': return 'bg-blue-100 text-blue-800';
-      case 'approved': return 'bg-green-100 text-green-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getUrgencyColor = (requestedDayOff) => {
-    const requestedDate = new Date(requestedDayOff);
-    const now = new Date();
-    const daysUntilRequested = Math.ceil((requestedDate - now) / (1000 * 60 * 60 * 24));
-
-    if (daysUntilRequested <= 3) return 'bg-red-100 text-red-800 border-red-200';
-    if (daysUntilRequested <= 7) return 'bg-orange-100 text-orange-800 border-orange-200';
-    return 'bg-green-100 text-green-800 border-green-200';
-  };
-
   const getUrgencyText = (requestedDayOff) => {
     const requestedDate = new Date(requestedDayOff);
     const now = new Date();
@@ -473,711 +498,695 @@ const DayOffSwapsPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader className="mx-auto h-8 w-8 text-blue-600 animate-spin" />
-          <p className="mt-2 text-gray-600">Loading available day off swaps...</p>
+      <div className="app-page flex items-center justify-center">
+        <div className="text-center" role="status">
+          <span className="mx-auto block h-10 w-10 animate-spin rounded-full border-[3px] border-brand-100 border-t-brand-500" aria-hidden="true" />
+          <p className="mt-4 text-sm text-ink/55">Loading available day off swaps...</p>
         </div>
       </div>
     );
   }
 
+  const hasActiveFilters = searchTerm || statusFilter !== 'available' || sortBy !== 'newest' || dateFilterStart || dateFilterEnd || dateFilterType !== 'requested';
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="pt-2 bg-gradient-to-b from-primary-50 to-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row gap-8 sm:gap-0 sm:justify-between sm:items-center py-6">
-            <div className="flex items-center">
-              <ArrowLeftRight className="h-8 w-8 text-orange-600 mr-3" />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+    <div className="app-page">
+      {/* Page hero */}
+      <section className="app-hero">
+        <div className="container-site py-6 sm:py-8">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-4">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-peach-200 text-peach-700 sm:h-14 sm:w-14" aria-hidden="true">
+                <ArrowLeftRight className="h-6 w-6" />
+              </span>
+              <div className="min-w-0">
+                <h1 className="app-title">
                   Day Off Swaps Board
                 </h1>
-                <p className="text-sm text-gray-500">Find day off swaps with your colleagues</p>
+                <p className="mt-1 text-[15px] text-ink/55">Find day off swaps with your colleagues</p>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-right">
-                <div className="text-sm font-medium text-gray-900">
-                  {filteredRequests.length} Available Swaps
-                </div>
-                <div className="text-xs text-gray-500">
-                  From {new Set(filteredRequests.map(req => req.requesterUserId?.fullName)).size} colleagues
-                </div>
-              </div>
+            <div className="self-start rounded-2xl bg-sand-200 px-5 py-3 sm:self-auto sm:text-right">
+              <p className="text-sm font-medium text-ink">
+                <span className="font-display text-2xl leading-none">{filteredRequests.length}</span> Available Swaps
+              </p>
+              <p className="mt-0.5 text-xs text-ink/55">
+                From {new Set(filteredRequests.map(req => req.requesterUserId?.fullName)).size} colleagues
+              </p>
             </div>
           </div>
         </div>
-      </header>
+      </section>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="container-site py-8">
         {/* Error Message */}
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="flex items-center">
-              <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-              <p className="text-red-600">{error}</p>
-              <button
-                onClick={() => setError('')}
-                className="ml-auto text-red-500 hover:text-red-700"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
+          <div className="alert alert-error mb-6" role="alert">
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
+            <p className="flex-1">{error}</p>
+            <button
+              type="button"
+              onClick={() => setError('')}
+              aria-label="Dismiss error"
+              className="-my-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-rose-200"
+            >
+              <X className="h-4 w-4" aria-hidden="true" />
+            </button>
           </div>
         )}
 
         {/* Filters and Controls */}
-        <div className="bg-white rounded-lg shadow p-4 mb-6">
-          <div className="flex flex-col space-y-4">
-            {/* First Row - Main Filters */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-              <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
-                {/* Search */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <input
-                    type="text"
-                    placeholder="Search by reason or employee..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full sm:w-64"
-                  />
-                </div>
-
-                {/* Status Filter */}
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="available">Available Only</option>
-                  <option value="all">All Requests</option>
-                </select>
-
-                {/* Sort By */}
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="newest">Newest First</option>
-                  <option value="oldest">Oldest First</option>
-                  <option value="urgent">Most Urgent</option>
-                </select>
-
-                {/* Date Filter Toggle */}
-                <button
-                  onClick={() => setShowDateFilters(!showDateFilters)}
-                  className={`inline-flex items-center px-3 py-2 rounded-lg transition-colors duration-200 ${showDateFilters || dateFilterStart || dateFilterEnd
-                    ? 'bg-orange-100 text-orange-700 border border-orange-300'
-                    : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200'
-                    }`}
-                >
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Date Filter
-                  {(dateFilterStart || dateFilterEnd) && (
-                    <span className="ml-2 bg-orange-500 text-white text-xs rounded-full px-2 py-0.5">
-                      Active
-                    </span>
-                  )}
-                </button>
+        <div className="app-card mb-6 p-4">
+          {/* First Row - Main Filters */}
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Search */}
+              <div className="relative w-full sm:w-64">
+                <label htmlFor="dayoff-board-search" className="sr-only">Search by reason or employee</label>
+                <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/40" aria-hidden="true" />
+                <input
+                  id="dayoff-board-search"
+                  type="text"
+                  placeholder="Search by reason or employee..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="field h-11 py-2 pl-10"
+                />
               </div>
 
-              <div className="flex items-center space-x-2">
-                {/* Clear Filters */}
-                {(searchTerm || statusFilter !== 'available' || sortBy !== 'newest' || dateFilterStart || dateFilterEnd || dateFilterType !== 'requested') && (
-                  <button
-                    onClick={clearAllFilters}
-                    className="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200"
-                  >
-                    <Filter className="h-4 w-4 mr-2" />
-                    Clear All
-                  </button>
+              {/* Status Filter */}
+              <label htmlFor="dayoff-board-status" className="sr-only">Show</label>
+              <select
+                id="dayoff-board-status"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="field h-11 w-auto min-w-0 flex-1 basis-[calc(50%_-_4px)] px-3 py-2 text-sm sm:flex-none sm:basis-auto"
+              >
+                <option value="available">Available Only</option>
+                <option value="all">All Requests</option>
+              </select>
+
+              {/* Sort By */}
+              <label htmlFor="dayoff-board-sort" className="sr-only">Sort by</label>
+              <select
+                id="dayoff-board-sort"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="field h-11 w-auto min-w-0 flex-1 basis-[calc(50%_-_4px)] px-3 py-2 text-sm sm:flex-none sm:basis-auto"
+              >
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="urgent">Most Urgent</option>
+              </select>
+
+              {/* Date Filter Toggle */}
+              <button
+                type="button"
+                onClick={() => setShowDateFilters(!showDateFilters)}
+                aria-expanded={showDateFilters}
+                className={`btn btn-md border ${showDateFilters || dateFilterStart || dateFilterEnd
+                  ? 'border-peach-300 bg-peach-100 text-peach-700'
+                  : 'border-ink/10 bg-white text-ink hover:bg-sand-100'
+                  }`}
+              >
+                <Calendar className="h-4 w-4" aria-hidden="true" />
+                Date Filter
+                {(dateFilterStart || dateFilterEnd) && (
+                  <span className="rounded-full bg-peach-500 px-2 py-0.5 text-[11px] font-semibold text-white">
+                    Active
+                  </span>
                 )}
-
-                {/* Refresh */}
-                <button
-                  onClick={filterAndSortRequests}
-                  className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200"
-                >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Refresh
-                </button>
-              </div>
+              </button>
             </div>
 
-            {/* Second Row - Date Filters (Collapsible) */}
-            {showDateFilters && (
-              <div className="border-t pt-4">
-                <div className="flex flex-col space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm font-medium text-gray-700">Filter by date:</span>
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Clear Filters */}
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={clearAllFilters}
+                  className="btn btn-ghost btn-md"
+                >
+                  <Filter className="h-4 w-4" aria-hidden="true" />
+                  Clear All
+                </button>
+              )}
+
+              {/* Refresh */}
+              <button
+                type="button"
+                onClick={filterAndSortRequests}
+                className="btn btn-white btn-md border border-ink/10"
+              >
+                <RefreshCw className="h-4 w-4" aria-hidden="true" />
+                Refresh
+              </button>
+            </div>
+          </div>
+
+          {/* Second Row - Date Filters (Collapsible) */}
+          {showDateFilters && (
+            <div className="mt-4 border-t border-ink/[0.06] pt-4">
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-ink/45" aria-hidden="true" />
+                  <span className="text-sm font-medium text-ink/80">Filter by date:</span>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3">
+                  {/* Date Type Filter */}
+                  <div className="flex items-center gap-2">
+                    <label htmlFor="dayoff-board-date-type" className="whitespace-nowrap text-sm text-ink/60">Filter by:</label>
+                    <select
+                      id="dayoff-board-date-type"
+                      value={dateFilterType}
+                      onChange={(e) => setDateFilterType(e.target.value)}
+                      className="field h-11 w-auto min-w-0 py-2"
+                    >
+                      <option value="requested">Requested Day Off</option>
+                      <option value="original">Original Day Off</option>
+                      <option value="either">Either Day Off</option>
+                    </select>
                   </div>
 
-                  <div className="flex flex-col lg:flex-row lg:items-center space-y-4 lg:space-y-0 lg:space-x-4">
-                    {/* Date Type Filter */}
-                    <div className="flex items-center space-x-2">
-                      <label className="text-sm text-gray-600 whitespace-nowrap">Filter by:</label>
-                      <select
-                        value={dateFilterType}
-                        onChange={(e) => setDateFilterType(e.target.value)}
-                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                      >
-                        <option value="requested">Requested Day Off</option>
-                        <option value="original">Original Day Off</option>
-                        <option value="either">Either Day Off</option>
-                      </select>
-                    </div>
+                  {/* Date Range */}
+                  <div className="flex items-center gap-2">
+                    <label htmlFor="dayoff-board-from" className="w-10 text-sm text-ink/60 sm:w-auto">From:</label>
+                    <input
+                      id="dayoff-board-from"
+                      type="date"
+                      value={dateFilterStart}
+                      onChange={(e) => setDateFilterStart(e.target.value)}
+                      className="field h-11 w-auto py-2"
+                    />
+                  </div>
 
-                    {/* Date Range */}
-                    <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-                      <div className="flex items-center space-x-2">
-                        <label className="text-sm text-gray-600 whitespace-nowrap">From:</label>
-                        <input
-                          type="date"
-                          value={dateFilterStart}
-                          onChange={(e) => setDateFilterStart(e.target.value)}
-                          className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                        />
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        <label className="text-sm text-gray-600 whitespace-nowrap">To:</label>
-                        <input
-                          type="date"
-                          value={dateFilterEnd}
-                          onChange={(e) => setDateFilterEnd(e.target.value)}
-                          className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                        />
-                      </div>
-
-                      {(dateFilterStart || dateFilterEnd) && (
-                        <button
-                          onClick={clearDateFilters}
-                          className="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-600 rounded text-sm hover:bg-gray-200 transition-colors duration-200"
-                        >
-                          <X className="h-3 w-3 mr-1" />
-                          Clear dates
-                        </button>
-                      )}
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <label htmlFor="dayoff-board-to" className="w-10 text-sm text-ink/60 sm:w-auto">To:</label>
+                    <input
+                      id="dayoff-board-to"
+                      type="date"
+                      value={dateFilterEnd}
+                      onChange={(e) => setDateFilterEnd(e.target.value)}
+                      className="field h-11 w-auto py-2"
+                    />
                   </div>
 
                   {(dateFilterStart || dateFilterEnd) && (
-                    <div className="mt-2 text-sm text-gray-600">
-                      {getDateFilterDescription()}
-                    </div>
+                    <button
+                      type="button"
+                      onClick={clearDateFilters}
+                      className="btn btn-ghost btn-sm"
+                    >
+                      <X className="h-3.5 w-3.5" aria-hidden="true" />
+                      Clear dates
+                    </button>
                   )}
                 </div>
+
+                {(dateFilterStart || dateFilterEnd) && (
+                  <p className="text-sm text-ink/55">
+                    {getDateFilterDescription()}
+                  </p>
+                )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Day Off Requests Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredRequests.map((request) => (
-            <div
-              key={request._id}
-              className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden"
-            >
-              {/* Card Header */}
-              <div className="p-4 border-b border-gray-200">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="bg-orange-100 rounded-full p-2">
-                      <CalendarDays className="h-5 w-5 text-orange-600" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-900">
+        {filteredRequests.length > 0 && (
+          <ul className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {filteredRequests.map((request) => (
+              <li
+                key={request._id}
+                className="app-card flex flex-col overflow-hidden transition-shadow duration-300 hover:shadow-lift"
+              >
+                {/* Card Header */}
+                <div className="p-5 pb-4">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-peach-200 text-peach-700" aria-hidden="true">
+                      <CalendarDays className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0">
+                      <h2 className="truncate text-base font-semibold text-ink">
                         {request.requesterUserId?.fullName || 'Unknown Employee'}
-                      </h3>
-                      <p className="text-sm text-gray-500">{request.requesterUserId?.email || ''}</p>
+                      </h2>
+                      <p className="truncate text-sm text-ink/50">{request.requesterUserId?.email || ''}</p>
                     </div>
                   </div>
-                  <div className="flex flex-col items-end space-y-1">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getUrgencyColor(request.requestedDayOff)}`}>
-                      {getUrgencyText(request.requestedDayOff)}
-                    </span>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(request.status)}`}>
-                      {request.status.replace('_', ' ').toUpperCase()}
-                    </span>
+                  <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                    <UrgencyBadge level={getUrgencyText(request.requestedDayOff).toLowerCase()} />
+                    <StatusBadge status={request.status} />
                   </div>
                 </div>
-              </div>
 
-              {/* Card Body */}
-              <div className="p-4">
-                <div className="space-y-3">
+                {/* Card Body */}
+                <div className="flex-1 space-y-4 px-5 pb-5">
                   {/* Reason */}
                   <div>
-                    <p className="text-sm font-medium text-gray-700 mb-1">Reason:</p>
-                    <p className="text-sm text-gray-900 line-clamp-2">{request.reason}</p>
+                    <p className={EYEBROW}>Reason</p>
+                    <p className="mt-1 line-clamp-2 break-words text-sm text-ink/80">{request.reason}</p>
                   </div>
 
                   {/* Day Off Swap Details */}
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <p className="text-sm font-medium text-gray-700 mb-2">Day Off Swap:</p>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-xs">
-                        <div className="flex items-center text-red-600">
-                          <Calendar className="h-3 w-3 mr-1" />
-                          <span>Giving up: {formatDateOnly(request.originalDayOff)}</span>
-                        </div>
-                        <ArrowRight className="h-3 w-3 text-gray-400" />
-                        <div className="flex items-center text-green-600">
-                          <Calendar className="h-3 w-3 mr-1" />
-                          <span>Wants: {formatDateOnly(request.requestedDayOff)}</span>
-                        </div>
-                      </div>
+                  <div className="rounded-xl bg-sand-100 p-3.5">
+                    <p className={`${EYEBROW} mb-2`}>Day Off Swap</p>
+                    <div className="flex flex-wrap items-center gap-2 text-[13px]">
+                      <span className="inline-flex items-center gap-1.5 rounded-lg bg-rose-100 px-2.5 py-1.5 font-medium text-rose-700">
+                        <Calendar className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                        <span>Giving up: {formatDateOnly(request.originalDayOff)}</span>
+                      </span>
+                      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-ink/35" aria-hidden="true" />
+                      <span className="inline-flex items-center gap-1.5 rounded-lg bg-mint-100 px-2.5 py-1.5 font-medium text-mint-700">
+                        <Calendar className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                        <span>Wants: {formatDateOnly(request.requestedDayOff)}</span>
+                      </span>
                     </div>
                   </div>
 
                   {/* Shift Details (if provided) */}
                   {request.shiftStartDate && request.shiftEndDate && (
-                    <div className="bg-blue-50 rounded-lg p-3">
-                      <p className="text-sm font-medium text-blue-700 mb-2">Shift Details:</p>
-                      <div className="space-y-1">
-                        <div className="flex items-center text-xs text-blue-600">
-                          <Clock className="h-3 w-3 mr-1" />
+                    <div className="rounded-xl border border-ink/[0.07] p-3.5">
+                      <p className={`${EYEBROW} mb-2`}>Shift Details</p>
+                      <ul className="space-y-1.5 text-[13px] text-ink/70">
+                        <li className="flex items-start gap-2">
+                          <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink/40" aria-hidden="true" />
                           <span>{formatDate(request.shiftStartDate)} - {formatDate(request.shiftEndDate)}</span>
-                        </div>
+                        </li>
                         {request.overtimeStart && (
-                          <div className="flex items-center text-xs text-blue-600">
-                            <Plus className="h-3 w-3 mr-1" />
+                          <li className="flex items-start gap-2">
+                            <Plus className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink/40" aria-hidden="true" />
                             <span>Overtime: {formatDate(request.overtimeStart)} - {formatDate(request.overtimeEnd)}</span>
-                          </div>
+                          </li>
                         )}
-                      </div>
+                      </ul>
                     </div>
                   )}
 
                   {/* Matches Count */}
                   {request.matches && request.matches.length > 0 && (
-                    <div className="flex items-center text-sm text-blue-600">
-                      <MessageSquare className="h-4 w-4 mr-1" />
+                    <p className="flex items-center gap-1.5 text-sm font-medium text-lavender-700">
+                      <MessageSquare className="h-4 w-4" aria-hidden="true" />
                       <span>{request.matches.length} match{request.matches.length !== 1 ? 'es' : ''} proposed</span>
-                    </div>
+                    </p>
                   )}
 
                   {/* Your Match Status */}
                   {hasAlreadyMatched(request) && (
-                    <div className="flex items-center text-sm text-green-600 bg-green-50 rounded-lg p-2">
-                      <CheckCircle className="h-4 w-4 mr-1" />
+                    <p className="flex items-center gap-2 rounded-xl bg-mint-100 px-3 py-2 text-sm font-medium text-mint-700">
+                      <CheckCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
                       <span>You've already proposed a match</span>
-                    </div>
+                    </p>
                   )}
                 </div>
-              </div>
 
-              {/* Card Footer */}
-              <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div className="text-xs text-gray-500">
+                {/* Card Footer */}
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-ink/[0.06] bg-sand-50 px-5 py-3.5">
+                  <p className="text-xs text-ink/50">
                     Posted {formatDateOnly(request.createdAt)}
-                  </div>
-                  <div className="flex items-center space-x-2">
+                  </p>
+                  <div className="flex items-center gap-2">
                     {/* View Details */}
                     <button
+                      type="button"
                       onClick={() => viewRequestDetails(request)}
-                      className="inline-flex items-center px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 transition-colors duration-200"
+                      className="btn btn-white btn-sm border border-ink/10"
                     >
-                      <Eye className="h-3 w-3 mr-1" />
+                      <Eye className="h-3.5 w-3.5" aria-hidden="true" />
                       View
                     </button>
 
                     {/* Action Buttons */}
                     {canTakeAction(request) && !hasAlreadyMatched(request) && canMatchRequest(request) && (
                       <button
+                        type="button"
                         onClick={() => openMatchModal(request)}
-                        className="inline-flex items-center px-3 py-1 bg-orange-600 text-white text-sm rounded hover:bg-orange-700 transition-colors duration-200"
+                        className="btn btn-primary btn-sm"
                       >
-                        <ArrowLeftRight className="h-3 w-3 mr-1" />
-                        Swap now!
+                        <ArrowLeftRight className="h-3.5 w-3.5" aria-hidden="true" />
+                        Propose match
                       </button>
                     )}
                   </div>
                 </div>
-              </div>
-            </div>
-          ))}
-        </div>
+              </li>
+            ))}
+          </ul>
+        )}
 
         {/* Empty State */}
         {filteredRequests.length === 0 && (
-          <div className="text-center py-12">
-            <ArrowLeftRight className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No day off swaps available</h3>
-            <p className="mt-1 text-sm text-gray-500">
+          <div className="app-card flex flex-col items-center px-6 py-14 text-center">
+            <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-peach-200 text-peach-700" aria-hidden="true">
+              <ArrowLeftRight className="h-7 w-7" />
+            </span>
+            <h2 className="mt-5 font-display text-2xl text-ink">No day off swaps available</h2>
+            <p className="mt-2 max-w-md text-[15px] leading-relaxed text-ink/55">
               {dayOffRequests.length === 0
                 ? 'No one has posted any day off swap requests yet.'
                 : 'Try adjusting your search or filters to find more swaps.'
               }
             </p>
-            {(searchTerm || statusFilter !== 'available' || sortBy !== 'newest' || dateFilterStart || dateFilterEnd || dateFilterType !== 'requested') && (
+            {hasActiveFilters && (
               <button
+                type="button"
                 onClick={clearAllFilters}
-                className="mt-3 inline-flex items-center px-4 py-2 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700 transition-colors duration-200"
+                className="btn btn-primary btn-md mt-6"
               >
-                <Filter className="h-4 w-4 mr-2" />
+                <Filter className="h-4 w-4" aria-hidden="true" />
                 Clear all filters
               </button>
             )}
           </div>
         )}
-      </main>
+      </div>
 
       {/* View Request Modal */}
       {showViewModal && selectedRequest && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-10 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-medium text-gray-900">Day Off Swap Details</h3>
-                <button
-                  onClick={() => setShowViewModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
+        <div className="modal-backdrop">
+          <div className="modal-panel max-w-2xl" role="dialog" aria-modal="true" aria-labelledby="dayoff-view-title">
+            <ModalHeader id="dayoff-view-title" title="Day Off Swap Details" onClose={() => setShowViewModal(false)} />
 
-              <div className="space-y-4">
-                {/* Request Information */}
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h4 className="font-medium text-gray-900 mb-3">Request Information</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">Requested By</label>
-                      <div className="flex items-center mt-1">
-                        <User className="h-4 w-4 text-gray-400 mr-2" />
-                        <div>
-                          <p className="text-sm text-gray-900">{selectedRequest.requesterUserId?.fullName || 'Unknown'}</p>
-                          <p className="text-xs text-gray-500">{selectedRequest.requesterUserId?.email || ''}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">Status</label>
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full mt-1 ${getStatusColor(selectedRequest.status)}`}>
-                        {selectedRequest.status.replace('_', ' ').toUpperCase()}
+            <div className="space-y-4 p-6">
+              {/* Request Information */}
+              <DetailSection title="Request Information">
+                <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Detail label="Requested By">
+                    <span className="flex items-start gap-2">
+                      <User className="mt-0.5 h-4 w-4 shrink-0 text-ink/40" aria-hidden="true" />
+                      <span className="min-w-0">
+                        <span className="block">{selectedRequest.requesterUserId?.fullName || 'Unknown'}</span>
+                        <span className="block break-all text-xs text-ink/55">{selectedRequest.requesterUserId?.email || ''}</span>
                       </span>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">Posted</label>
-                      <p className="text-sm text-gray-900 mt-1">{formatDate(selectedRequest.createdAt)}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">Urgency</label>
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full border mt-1 ${getUrgencyColor(selectedRequest.requestedDayOff)}`}>
-                        {getUrgencyText(selectedRequest.requestedDayOff)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+                    </span>
+                  </Detail>
+                  <Detail label="Status">
+                    <StatusBadge status={selectedRequest.status} />
+                  </Detail>
+                  <Detail label="Posted">{formatDate(selectedRequest.createdAt)}</Detail>
+                  <Detail label="Urgency">
+                    <UrgencyBadge level={getUrgencyText(selectedRequest.requestedDayOff).toLowerCase()} />
+                  </Detail>
+                </dl>
+              </DetailSection>
 
-                {/* Reason */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h4 className="font-medium text-blue-900 mb-2">Reason for Swap</h4>
-                  <p className="text-sm text-blue-800">{selectedRequest.reason}</p>
-                </div>
+              {/* Reason */}
+              <DetailSection title="Reason for Swap" tone="border border-ink/[0.07] bg-white">
+                <p className="break-words text-sm text-ink/80">{selectedRequest.reason}</p>
+              </DetailSection>
 
-                {/* Day Off Swap Details */}
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                  <h4 className="font-medium text-orange-900 mb-3">Day Off Swap Details</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-orange-700">Giving Up (Original Day Off)</label>
-                      <p className="text-sm text-orange-900">{formatDateOnly(selectedRequest.originalDayOff)}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-orange-700">Wants (Requested Day Off)</label>
-                      <p className="text-sm text-orange-900">{formatDateOnly(selectedRequest.requestedDayOff)}</p>
-                    </div>
-                  </div>
-                </div>
+              {/* Day Off Swap Details */}
+              <DetailSection title="Day Off Swap Details" tone="bg-peach-100" titleClass="text-peach-700">
+                <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Detail label="Giving Up (Original Day Off)">{formatDateOnly(selectedRequest.originalDayOff)}</Detail>
+                  <Detail label="Wants (Requested Day Off)">{formatDateOnly(selectedRequest.requestedDayOff)}</Detail>
+                </dl>
+              </DetailSection>
 
-                {/* Shift Details */}
-                {(selectedRequest.shiftStartDate || selectedRequest.shiftEndDate) && (
-                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                    <h4 className="font-medium text-purple-900 mb-3">Shift Details</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {selectedRequest.shiftStartDate && (
-                        <div>
-                          <label className="block text-sm font-medium text-purple-700">Shift Start</label>
-                          <p className="text-sm text-purple-900">{formatDate(selectedRequest.shiftStartDate)}</p>
-                        </div>
-                      )}
-                      {selectedRequest.shiftEndDate && (
-                        <div>
-                          <label className="block text-sm font-medium text-purple-700">Shift End</label>
-                          <p className="text-sm text-purple-900">{formatDate(selectedRequest.shiftEndDate)}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
+              {/* Shift Details */}
+              {(selectedRequest.shiftStartDate || selectedRequest.shiftEndDate) && (
+                <DetailSection title="Shift Details" tone="bg-lavender-100" titleClass="text-lavender-700">
+                  <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    {selectedRequest.shiftStartDate && (
+                      <Detail label="Shift Start">{formatDate(selectedRequest.shiftStartDate)}</Detail>
+                    )}
+                    {selectedRequest.shiftEndDate && (
+                      <Detail label="Shift End">{formatDate(selectedRequest.shiftEndDate)}</Detail>
+                    )}
+                  </dl>
+                </DetailSection>
+              )}
 
-                {/* Overtime Details */}
-                {(selectedRequest.overtimeStart || selectedRequest.overtimeEnd) && (
-                  <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
-                    <h4 className="font-medium text-indigo-900 mb-3">Overtime Details</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {selectedRequest.overtimeStart && (
-                        <div>
-                          <label className="block text-sm font-medium text-indigo-700">Overtime Start</label>
-                          <p className="text-sm text-indigo-900">{formatDate(selectedRequest.overtimeStart)}</p>
-                        </div>
-                      )}
-                      {selectedRequest.overtimeEnd && (
-                        <div>
-                          <label className="block text-sm font-medium text-indigo-700">Overtime End</label>
-                          <p className="text-sm text-indigo-900">{formatDate(selectedRequest.overtimeEnd)}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
+              {/* Overtime Details */}
+              {(selectedRequest.overtimeStart || selectedRequest.overtimeEnd) && (
+                <DetailSection title="Overtime Details" tone="bg-butter-100" titleClass="text-butter-700">
+                  <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    {selectedRequest.overtimeStart && (
+                      <Detail label="Overtime Start">{formatDate(selectedRequest.overtimeStart)}</Detail>
+                    )}
+                    {selectedRequest.overtimeEnd && (
+                      <Detail label="Overtime End">{formatDate(selectedRequest.overtimeEnd)}</Detail>
+                    )}
+                  </dl>
+                </DetailSection>
+              )}
 
-                {/* Matches Section */}
-                {selectedRequest.matches && selectedRequest.matches.length > 0 && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <h4 className="font-medium text-green-900 mb-3">Match Proposals ({selectedRequest.matches.length})</h4>
-                    <div className="space-y-3">
-                      {selectedRequest.matches.map((match, index) => (
-                        <div key={index} className="bg-white rounded p-3 border border-green-200">
-                          <div className="flex justify-between items-start mb-2">
-                            <div className="flex-1">
-                              <div className="flex items-center mb-2">
-                                <User className="h-4 w-4 text-gray-400 mr-2" />
-                                <div>
-                                  <p className="text-sm font-medium text-gray-900">
-                                    {match.matchedBy?.fullName || 'Unknown Employee'}
-                                  </p>
-                                  <p className="text-xs text-gray-500">{match.matchedBy?.email || 'Unknown Email'}</p>
-                                </div>
-                              </div>
-                              <div className="space-y-1">
-                                <p className="text-xs text-gray-600">
-                                  <Calendar className="h-3 w-3 inline mr-1" />
-                                  Their day off: {formatDateOnly(match.originalDayOff)}
+              {/* Matches Section */}
+              {selectedRequest.matches && selectedRequest.matches.length > 0 && (
+                <DetailSection title={`Match Proposals (${selectedRequest.matches.length})`} tone="border border-ink/[0.07] bg-white">
+                  <ul className="space-y-3">
+                    {selectedRequest.matches.map((match, index) => (
+                      <li key={index} className="rounded-xl border border-ink/[0.07] bg-sand-50 p-4">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="min-w-0 flex-1">
+                            <div className="mb-2 flex items-start gap-2">
+                              <User className="mt-0.5 h-4 w-4 shrink-0 text-ink/40" aria-hidden="true" />
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-ink">
+                                  {match.matchedBy?.fullName || 'Unknown Employee'}
                                 </p>
-                                {match.shiftStartDate && match.shiftEndDate && (
-                                  <p className="text-xs text-gray-600">
-                                    <Clock className="h-3 w-3 inline mr-1" />
-                                    Shift: {formatDate(match.shiftStartDate)} - {formatDate(match.shiftEndDate)}
-                                  </p>
-                                )}
-                                {match.overtimeStart && (
-                                  <p className="text-xs text-gray-600">
-                                    <Plus className="h-3 w-3 inline mr-1" />
-                                    Overtime: {formatDate(match.overtimeStart)} - {formatDate(match.overtimeEnd)}
-                                  </p>
-                                )}
-                                <p className="text-xs text-gray-500">
-                                  Proposed on {formatDate(match.matchedAt)}
-                                </p>
+                                <p className="break-all text-xs text-ink/55">{match.matchedBy?.email || 'Unknown Email'}</p>
                               </div>
                             </div>
-                            <div className="flex items-center space-x-2">
-                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${match.status === 'accepted' ? 'bg-green-100 text-green-800' :
-                                match.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                                  'bg-yellow-100 text-yellow-800'
-                                }`}>
-                                {match.status.toUpperCase()}
-                              </span>
-                              {match.matchedBy?._id === employeeData?.id && (
-                                <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                                  Your Proposal
-                                </span>
+                            <div className="space-y-1 text-xs text-ink/60">
+                              <p className="flex items-start gap-1.5">
+                                <Calendar className="mt-px h-3 w-3 shrink-0" aria-hidden="true" />
+                                <span>Their day off: {formatDateOnly(match.originalDayOff)}</span>
+                              </p>
+                              {match.shiftStartDate && match.shiftEndDate && (
+                                <p className="flex items-start gap-1.5">
+                                  <Clock className="mt-px h-3 w-3 shrink-0" aria-hidden="true" />
+                                  <span>Shift: {formatDate(match.shiftStartDate)} - {formatDate(match.shiftEndDate)}</span>
+                                </p>
                               )}
+                              {match.overtimeStart && (
+                                <p className="flex items-start gap-1.5">
+                                  <Plus className="mt-px h-3 w-3 shrink-0" aria-hidden="true" />
+                                  <span>Overtime: {formatDate(match.overtimeStart)} - {formatDate(match.overtimeEnd)}</span>
+                                </p>
+                              )}
+                              <p className="text-ink/50">
+                                Proposed on {formatDate(match.matchedAt)}
+                              </p>
                             </div>
                           </div>
+                          <div className="flex shrink-0 flex-wrap items-center gap-2">
+                            <span className={`chip capitalize ${match.status === 'accepted' ? 'bg-mint-200 text-mint-700' :
+                              match.status === 'rejected' ? 'bg-rose-200 text-rose-700' :
+                                'bg-butter-200 text-butter-700'
+                              }`}>
+                              {match.status}
+                            </span>
+                            {match.matchedBy?._id === employeeData?.id && (
+                              <span className="chip bg-brand-100 text-brand-700">
+                                Your Proposal
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Action Buttons */}
-                <div className="flex justify-end space-x-3 pt-4 border-t">
-                  {canTakeAction(selectedRequest) && !hasAlreadyMatched(selectedRequest) && canMatchRequest(selectedRequest) && (
-                    <button
-                      onClick={() => {
-                        setShowViewModal(false);
-                        openMatchModal(selectedRequest);
-                      }}
-                      className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors duration-200 flex items-center"
-                    >
-                      <ArrowLeftRight className="h-4 w-4 mr-2" />
-                      Offer to get
-                    </button>
-                  )}
-                </div>
-              </div>
+                      </li>
+                    ))}
+                  </ul>
+                </DetailSection>
+              )}
             </div>
+
+            {/* Action Buttons */}
+            <ModalFooter>
+              <button
+                type="button"
+                onClick={() => setShowViewModal(false)}
+                className="btn btn-white btn-md border border-ink/10"
+              >
+                Close
+              </button>
+              {canTakeAction(selectedRequest) && !hasAlreadyMatched(selectedRequest) && canMatchRequest(selectedRequest) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowViewModal(false);
+                    openMatchModal(selectedRequest);
+                  }}
+                  className="btn btn-primary btn-md"
+                >
+                  <ArrowLeftRight className="h-4 w-4" aria-hidden="true" />
+                  Propose match
+                </button>
+              )}
+            </ModalFooter>
           </div>
         </div>
       )}
 
       {/* Match Proposal Modal */}
       {showMatchModal && selectedRequest && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-medium text-gray-900">Propose Day Off Match</h3>
-                <button
-                  onClick={() => setShowMatchModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
+        <div className="modal-backdrop">
+          <div className="modal-panel max-w-2xl" role="dialog" aria-modal="true" aria-labelledby="dayoff-match-title">
+            <ModalHeader id="dayoff-match-title" title="Propose Day Off Match" onClose={() => setShowMatchModal(false)} />
 
+            <div className="space-y-5 p-6">
               {/* Original Request Info */}
-              <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                <h4 className="font-medium text-gray-900 mb-2">Original Request</h4>
-                <div className="text-sm text-gray-600 space-y-1">
-                  <p><strong>From:</strong> {selectedRequest.requesterUserId?.fullName}</p>
-                  <p><strong>Giving up:</strong> {formatDateOnly(selectedRequest.originalDayOff)}</p>
-                  <p><strong>Wants:</strong> {formatDateOnly(selectedRequest.requestedDayOff)}</p>
-                  <p><strong>Reason:</strong> {selectedRequest.reason}</p>
-                </div>
-              </div>
+              <DetailSection title="Original Request">
+                <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <Detail label="From">{selectedRequest.requesterUserId?.fullName}</Detail>
+                  <Detail label="Giving up">{formatDateOnly(selectedRequest.originalDayOff)}</Detail>
+                  <Detail label="Wants">{formatDateOnly(selectedRequest.requestedDayOff)}</Detail>
+                  <Detail label="Reason">
+                    <span className="break-words">{selectedRequest.reason}</span>
+                  </Detail>
+                </dl>
+              </DetailSection>
 
-              <div className="space-y-4">
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                  <h4 className="font-medium text-orange-900 mb-3">Your Match Proposal</h4>
-                  <p className="text-sm text-orange-800 mb-4">
-                    To match this request, your original day off must be the same as their requested day off ({formatDateOnly(selectedRequest.requestedDayOff)}).
-                  </p>
+              <section className="rounded-2xl bg-peach-100 p-4 sm:p-5">
+                <h3 className="text-[15px] font-semibold text-peach-700">Your Match Proposal</h3>
+                <p className="mb-4 mt-1 text-sm text-ink/65">
+                  To match this request, your original day off must be the same as their requested day off ({formatDateOnly(selectedRequest.requestedDayOff)}).
+                </p>
 
-                  <div className="grid grid-cols-1 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Your Original Day Off *
-                        <span className="text-xs text-gray-500 block">
-                          (Must match their requested day: {formatDateOnly(selectedRequest.requestedDayOff)})
-                        </span>
-                      </label>
-                      <input
-                        type="date"
-                        value={matchData.originalDayOff}
-                        onChange={(e) => setMatchData({ ...matchData, originalDayOff: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                      />
-                    </div>
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <label htmlFor="match-original-dayoff" className="field-label">
+                      Your Original Day Off *
+                      <span className="mt-0.5 block text-xs font-normal text-ink/50">
+                        (Must match their requested day: {formatDateOnly(selectedRequest.requestedDayOff)})
+                      </span>
+                    </label>
+                    <input
+                      id="match-original-dayoff"
+                      type="date"
+                      value={matchData.originalDayOff}
+                      onChange={(e) => setMatchData({ ...matchData, originalDayOff: e.target.value })}
+                      className="field"
+                    />
                   </div>
                 </div>
+              </section>
 
-                {/* Optional Shift Details */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h4 className="font-medium text-blue-900 mb-3">Shift Details (Optional)</h4>
-                  <p className="text-sm text-blue-800 mb-4">
-                    Include your shift details for the day you're giving up, if applicable.
-                  </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Shift Start
-                      </label>
-                      <input
-                        type="datetime-local"
-                        value={matchData.shiftStartDate}
-                        onChange={(e) => setMatchData({ ...matchData, shiftStartDate: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Shift End
-                      </label>
-                      <input
-                        type="datetime-local"
-                        value={matchData.shiftEndDate}
-                        onChange={(e) => setMatchData({ ...matchData, shiftEndDate: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
+              {/* Optional Shift Details */}
+              <section>
+                <h3 className="text-[15px] font-semibold text-ink">Shift Details (Optional)</h3>
+                <p className="mb-4 mt-1 text-sm text-ink/55">
+                  Include your shift details for the day you're giving up, if applicable.
+                </p>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="match-shift-start" className="field-label">
+                      Shift Start
+                    </label>
+                    <input
+                      id="match-shift-start"
+                      type="datetime-local"
+                      value={matchData.shiftStartDate}
+                      onChange={(e) => setMatchData({ ...matchData, shiftStartDate: e.target.value })}
+                      className="field"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="match-shift-end" className="field-label">
+                      Shift End
+                    </label>
+                    <input
+                      id="match-shift-end"
+                      type="datetime-local"
+                      value={matchData.shiftEndDate}
+                      onChange={(e) => setMatchData({ ...matchData, shiftEndDate: e.target.value })}
+                      className="field"
+                    />
                   </div>
                 </div>
+              </section>
 
-                {/* Overtime Details */}
-                <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
-                  <h4 className="font-medium text-indigo-900 mb-3">Overtime (Optional)</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Overtime Start
-                      </label>
-                      <input
-                        type="datetime-local"
-                        value={matchData.overtimeStart}
-                        onChange={(e) => setMatchData({ ...matchData, overtimeStart: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Overtime End
-                      </label>
-                      <input
-                        type="datetime-local"
-                        value={matchData.overtimeEnd}
-                        onChange={(e) => setMatchData({ ...matchData, overtimeEnd: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                      />
-                    </div>
+              {/* Overtime Details */}
+              <section className="rounded-2xl bg-sand-100 p-4 sm:p-5">
+                <h3 className="mb-3 text-[15px] font-semibold text-ink">Overtime (Optional)</h3>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="match-ot-start" className="field-label">
+                      Overtime Start
+                    </label>
+                    <input
+                      id="match-ot-start"
+                      type="datetime-local"
+                      value={matchData.overtimeStart}
+                      onChange={(e) => setMatchData({ ...matchData, overtimeStart: e.target.value })}
+                      className="field"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="match-ot-end" className="field-label">
+                      Overtime End
+                    </label>
+                    <input
+                      id="match-ot-end"
+                      type="datetime-local"
+                      value={matchData.overtimeEnd}
+                      onChange={(e) => setMatchData({ ...matchData, overtimeEnd: e.target.value })}
+                      className="field"
+                    />
                   </div>
                 </div>
+              </section>
 
-                {/* Important Notes */}
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <h4 className="font-medium text-yellow-900 mb-2">Important Notes</h4>
-                  <ul className="text-sm text-yellow-800 space-y-1">
-                    <li>• Your original day off must exactly match their requested day off</li>
-                    <li>• You will get their original day off ({formatDateOnly(selectedRequest.originalDayOff)}) in return</li>
-                    <li>• The requester will be notified of your match proposal via email</li>
-                    <li>• All dates must be in the future</li>
-                    <li>• If both parties accept, supervisors will need to approve the swap</li>
-                  </ul>
-                </div>
+              {/* Important Notes */}
+              <section className="rounded-2xl border border-butter-300 bg-butter-100 p-4 sm:p-5">
+                <h3 className="mb-2 text-[15px] font-semibold text-butter-700">Important Notes</h3>
+                <ul className="list-disc space-y-1 pl-5 text-sm text-ink/70 marker:text-butter-500">
+                  <li>Your original day off must exactly match their requested day off</li>
+                  <li>You will get their original day off ({formatDateOnly(selectedRequest.originalDayOff)}) in return</li>
+                  <li>The requester will be notified of your match proposal via email</li>
+                  <li>All dates must be in the future</li>
+                  <li>If both parties accept, supervisors will need to approve the swap</li>
+                </ul>
+              </section>
 
-                {/* Match Summary */}
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h4 className="font-medium text-green-900 mb-2">Match Summary</h4>
-                  <div className="text-sm text-green-800 space-y-1">
-                    <p><strong>You give up:</strong> {matchData.originalDayOff ? formatDateOnly(matchData.originalDayOff) : 'Not selected'}</p>
-                    <p><strong>You get:</strong> {formatDateOnly(selectedRequest.originalDayOff)}</p>
-                    <p><strong>He give up:</strong> {formatDateOnly(selectedRequest.originalDayOff)}</p>
-                    <p><strong>He get:</strong> {matchData.originalDayOff ? formatDateOnly(matchData.originalDayOff) : 'Not selected'}</p>
-                  </div>
-                </div>
+              {/* Match Summary */}
+              <section className="rounded-2xl border border-mint-300 bg-mint-100 p-4 sm:p-5">
+                <h3 className="mb-3 text-[15px] font-semibold text-mint-700">Match Summary</h3>
+                <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <Detail label="You give up">{matchData.originalDayOff ? formatDateOnly(matchData.originalDayOff) : 'Not selected'}</Detail>
+                  <Detail label="You get">{formatDateOnly(selectedRequest.originalDayOff)}</Detail>
+                  <Detail label="They give up">{formatDateOnly(selectedRequest.originalDayOff)}</Detail>
+                  <Detail label="They get">{matchData.originalDayOff ? formatDateOnly(matchData.originalDayOff) : 'Not selected'}</Detail>
+                </dl>
+              </section>
 
-                {/* Action Buttons */}
-                <div className="flex justify-end space-x-3 pt-4 border-t">
+              {error && (
+                <div className="alert alert-error" role="alert">
+                  <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
+                  <p className="flex-1">{error}</p>
                   <button
-                    onClick={() => setShowMatchModal(false)}
-                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors duration-200"
+                    type="button"
+                    onClick={() => setError('')}
+                    aria-label="Dismiss error"
+                    className="-my-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-rose-200"
                   >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleMatchDayOff}
-                    disabled={!matchData.originalDayOff}
-                    className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors duration-200 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ArrowLeftRight className="h-4 w-4 mr-2" />
-                    Offer to get
+                    <X className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </div>
-              </div>
+              )}
             </div>
+
+            {/* Action Buttons */}
+            <ModalFooter>
+              <button
+                type="button"
+                onClick={() => setShowMatchModal(false)}
+                className="btn btn-white btn-md border border-ink/10"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleMatchDayOff}
+                disabled={!matchData.originalDayOff}
+                className="btn btn-primary btn-md"
+              >
+                <ArrowLeftRight className="h-4 w-4" aria-hidden="true" />
+                Propose match
+              </button>
+            </ModalFooter>
           </div>
         </div>
       )}

@@ -1,257 +1,122 @@
-import React, { useState, useEffect } from 'react';
-import { Home, ArrowLeft, Calendar, Building, User, RefreshCw, Mail, Phone } from 'lucide-react';
+import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft, ArrowRight, Building2, LayoutGrid, Mail, UserRound } from 'lucide-react';
+import { HeroArcs } from '../components/marketing/Sections';
+import { CONTACT_EMAIL } from '../components/Footer';
+import { Reveal } from '../motion';
 
-// Configuration for easy customization
-const notFoundConfig = {
-  title: "Page Not Found",
-  subtitle: "The page you're looking for doesn't exist or has been moved.",
-  image: {
-    emoji: "🔍",
-    alt: "Page not found illustration"
-  },
-  quickLinks: [
-    {
-      id: 'home',
-      title: 'Go Home',
-      subtitle: 'Back to the main page',
-      icon: Home,
-      route: '/',
-      color: 'blue',
-      primary: true
-    },
-    {
-      id: 'company_register',
-      title: 'Company Registration',
-      subtitle: 'Register your business',
-      icon: Building,
-      route: '/company_register',
-      color: 'green'
-    },
-    {
-      id: 'employee-register',
-      title: 'Employee Access',
-      subtitle: 'Request to join a company',
-      icon: User,
-      route: '/employee_register',
-      color: 'purple'
-    },
-    {
-      id: 'auth-flow',
-      title: 'Registration Flow',
-      subtitle: 'Guided account setup',
-      icon: Calendar,
-      route: '/',
-      color: 'orange'
-    }
-  ],
-  helpSection: {
-    title: "Need Help?",
-    description: "If you think this is an error, here are some things you can try:",
-    suggestions: [
-      "Check the URL for typos",
-      "Go back to the previous page",
-      "Use the search feature",
-      "Contact our support team"
-    ]
-  },
-  contact: {
-    email: "support@shiftswap.com",
-    phone: "+1 (555) 123-4567"
-  }
+const HELPFUL_LINKS = [
+  { label: 'Features', hint: 'Everything Shiftswaper can do', to: '/features', icon: LayoutGrid, tint: 'bg-lavender-200 text-lavender-700' },
+  { label: 'Company login', hint: 'Review join requests and employee IDs', to: '/company_login', icon: Building2, tint: 'bg-mint-200 text-mint-700' },
+  { label: 'Employee login', hint: 'Post swaps and respond to offers', to: '/employee_login', icon: UserRound, tint: 'bg-peach-200 text-peach-700' },
+  { label: 'Contact us', hint: CONTACT_EMAIL, href: `mailto:${CONTACT_EMAIL}`, icon: Mail, tint: 'bg-butter-200 text-butter-700' },
+];
+
+const cardClass =
+  'group flex h-full items-center gap-3 rounded-2xl border border-ink/[0.07] bg-white px-4 py-3.5 text-left shadow-soft transition-[transform,box-shadow,border-color] duration-300 ease-out-expo hover:-translate-y-0.5 hover:border-ink/15 hover:shadow-lift';
+
+const LinkCardBody = ({ link }) => {
+  const Icon = link.icon;
+  return (
+    <>
+      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${link.tint}`}>
+        <Icon className="h-[18px] w-[18px]" aria-hidden="true" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[15px] font-semibold text-ink">{link.label}</span>
+        <span className="block break-all text-[13px] leading-snug text-ink/55">{link.hint}</span>
+      </span>
+      <ArrowRight
+        className="h-4 w-4 shrink-0 text-ink/35 transition-transform duration-300 ease-out-expo group-hover:translate-x-1 group-hover:text-ink/70"
+        aria-hidden="true"
+      />
+    </>
+  );
 };
 
-// 404 Not Found Component
-const NotFoundPage = ({ navigate }) => {
-  const [countdown, setCountdown] = useState(null);
-
-  // Optional auto-redirect countdown (disabled by default)
-  useEffect(() => {
-    // Uncomment below to enable auto-redirect after 10 seconds
-    // setCountdown(10);
-    // const timer = setInterval(() => {
-    //   setCountdown(prev => {
-    //     if (prev <= 1) {
-    //       clearInterval(timer);
-    //       handleNavigation('/');
-    //       return 0;
-    //     }
-    //     return prev - 1;
-    //   });
-    // }, 1000);
-    // return () => clearInterval(timer);
-  }, []);
-
-  const handleNavigation = (route) => {
-    if (navigate) {
-      navigate(route);
-    } else {
-      // Fallback for environments without navigation
-      window.location.href = route;
-    }
-  };
+const NotFoundPage = () => {
+  const navigate = useNavigate();
 
   const handleGoBack = () => {
     if (window.history.length > 1) {
-      window.history.back();
+      navigate(-1);
     } else {
-      handleNavigation('/');
+      navigate('/');
     }
   };
 
-  const handleRefresh = () => {
-    window.location.reload();
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl w-full space-y-12">
-        {/* Main Error Section */}
-        <div className="text-center space-y-6">
-          {/* Large 404 Display */}
-          <div className="relative">
-            <h1 className="text-9xl font-bold text-gray-200 select-none">404</h1>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-6xl">{notFoundConfig.image.emoji}</span>
-            </div>
-          </div>
+    <section className="relative overflow-hidden bg-canvas">
+      <HeroArcs className="top-[38%]" />
 
-          {/* Error Message */}
-          <div className="space-y-3">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
-              {notFoundConfig.title}
-            </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              {notFoundConfig.subtitle}
-            </p>
-          </div>
+      <div className="container-site relative flex min-h-[calc(100svh-70px)] flex-col items-center justify-center py-16 text-center sm:py-20">
+        <Reveal y={12}>
+          <p className="eyebrow justify-center">Error 404 · Page not found</p>
+        </Reveal>
 
-          {/* Auto-redirect countdown (if enabled) */}
-          {countdown && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
-              <p className="text-blue-800 text-sm">
-                Redirecting to home page in <span className="font-semibold">{countdown}</span> seconds...
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Quick Navigation Links */}
-        <div className="space-y-6">
-          <h3 className="text-2xl font-bold text-gray-900 text-center">
-            Where would you like to go?
-          </h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {notFoundConfig.quickLinks.map((link) => {
-              const IconComponent = link.icon;
-              const colorClasses = {
-                blue: 'border-blue-200 hover:border-blue-400 hover:bg-blue-50 text-blue-600',
-                green: 'border-green-200 hover:border-green-400 hover:bg-green-50 text-green-600',
-                purple: 'border-purple-200 hover:border-purple-400 hover:bg-purple-50 text-purple-600',
-                orange: 'border-orange-200 hover:border-orange-400 hover:bg-orange-50 text-orange-600'
-              };
-
-              return (
-                <button
-                  key={link.id}
-                  onClick={() => handleNavigation(link.route)}
-                  className={`bg-white border-2 rounded-xl p-6 text-left transition-all duration-200 hover:shadow-lg group ${colorClasses[link.color] || colorClasses.blue
-                    } ${link.primary ? 'ring-2 ring-blue-500 ring-offset-2' : ''}`}
-                >
-                  <div className="flex items-center mb-3">
-                    <div className={`p-2 rounded-lg ${link.color === 'green' ? 'bg-green-100' :
-                      link.color === 'purple' ? 'bg-purple-100' :
-                        link.color === 'orange' ? 'bg-orange-100' :
-                          'bg-blue-100'
-                      }`}>
-                      <IconComponent className="h-5 w-5" />
-                    </div>
-                  </div>
-                  <h4 className="font-semibold text-gray-900 mb-1">
-                    {link.title}
-                  </h4>
-                  <p className="text-sm text-gray-600">
-                    {link.subtitle}
-                  </p>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <button
-            onClick={handleGoBack}
-            className="inline-flex items-center px-6 py-3 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors duration-200"
+        <Reveal delay={60} className="relative mt-4">
+          <p
+            aria-hidden="true"
+            className="select-none font-display text-[clamp(6.5rem,3.5rem+13vw,12.5rem)] font-normal leading-[0.95] tracking-[-0.02em] text-ink"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Go Back
-          </button>
-
-          <button
-            onClick={handleRefresh}
-            className="inline-flex items-center px-6 py-3 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors duration-200"
+            4<span className="text-brand-500">0</span>4
+          </p>
+          <span
+            aria-hidden="true"
+            className="chip absolute -right-3 top-1 rotate-[6deg] bg-rose-200 text-rose-700 shadow-soft sm:-right-8 sm:top-3"
           >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh Page
+            Not on the board
+          </span>
+        </Reveal>
+
+        <Reveal delay={120}>
+          <h1 className="type-h3 mx-auto mt-6 max-w-[18ch]">This shift doesn't exist</h1>
+        </Reveal>
+
+        <Reveal delay={180}>
+          <p className="type-lead mx-auto mt-4 max-w-[560px]">
+            The page you're looking for doesn't exist or has been moved. Check the address for typos, or pick up from
+            one of the pages below.
+          </p>
+        </Reveal>
+
+        <Reveal delay={240} className="w-full">
+          <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link to="/" className="btn btn-primary btn-lg btn-arrow w-full sm:w-auto">
+              Back to home <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+            <Link to="/how_it_works" className="btn btn-outline btn-lg w-full sm:w-auto">
+              How it works
+            </Link>
+          </div>
+          <button type="button" onClick={handleGoBack} className="btn btn-ghost btn-md mt-3 text-ink/70 hover:text-ink">
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            Go back to the previous page
           </button>
-        </div>
+        </Reveal>
 
-        {/* Help Section */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 space-y-6">
-          <div className="text-center space-y-3">
-            <h3 className="text-xl font-semibold text-gray-900">
-              {notFoundConfig.helpSection.title}
-            </h3>
-            <p className="text-gray-600">
-              {notFoundConfig.helpSection.description}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Suggestions */}
-            <div>
-              <h4 className="font-medium text-gray-900 mb-3">Suggestions:</h4>
-              <ul className="space-y-2">
-                {notFoundConfig.helpSection.suggestions.map((suggestion, index) => (
-                  <li key={index} className="flex items-center text-sm text-gray-600">
-                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mr-3 flex-shrink-0"></div>
-                    {suggestion}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Contact */}
-            <div>
-              <h4 className="font-medium text-gray-900 mb-3">Contact Support:</h4>
-              <div className="space-y-2">
-                <a
-                  href={`mailto:${notFoundConfig.contact.email}`}
-                  className="flex items-center text-sm text-blue-600 hover:text-blue-700 transition-colors duration-200"
-                >
-                  <Mail className="h-4 w-4 mr-2" />
-                  {notFoundConfig.contact.email}
-                </a>
-                <a
-                  href={`tel:${notFoundConfig.contact.phone}`}
-                  className="flex items-center text-sm text-blue-600 hover:text-blue-700 transition-colors duration-200"
-                >
-                  <Phone className="h-4 w-4 mr-2" />
-                  {notFoundConfig.contact.phone}
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="text-center text-sm text-gray-500">
-          <p>&copy; 2025 Shiftswaper. All rights reserved.</p>
-        </div>
+        <Reveal delay={300} className="mt-12 w-full max-w-[680px] sm:mt-14">
+          <nav aria-label="Helpful links">
+            <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-ink/45">Helpful links</p>
+            <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+              {HELPFUL_LINKS.map((link) => (
+                <li key={link.label}>
+                  {link.href ? (
+                    <a href={link.href} className={cardClass}>
+                      <LinkCardBody link={link} />
+                    </a>
+                  ) : (
+                    <Link to={link.to} className={cardClass}>
+                      <LinkCardBody link={link} />
+                    </Link>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </Reveal>
       </div>
-    </div>
+    </section>
   );
 };
 

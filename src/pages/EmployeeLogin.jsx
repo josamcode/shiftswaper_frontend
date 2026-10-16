@@ -1,9 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import { User, ArrowLeft, Eye, EyeOff, Loader, AlertCircle, CheckCircle } from 'lucide-react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Eye, EyeOff, Loader2, AlertCircle, CheckCircle2, ChevronDown, ChevronRight } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Cookies from 'js-cookie';
 import { checkAuthStatus } from '../utils/checkAuthRedirect';
 import { useAuth } from '../auth/AuthContext';
+import AuthLayout from '../components/layout/AuthLayout';
+import { StatusBadge } from '../components/product/Mockups';
+
+const FieldError = ({ id, children }) => (
+  <p id={id} className="field-error-text">
+    <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+    {children}
+  </p>
+);
+
+const STATUS_GUIDE = [
+  { status: 'pending', text: 'Your request is awaiting company approval' },
+  { status: 'approved', text: 'You can log in and start swapping shifts' },
+  { status: 'rejected', text: 'Your request was declined by the company' },
+];
+
+const TIPS = [
+  'Make sure you’ve submitted a request to join your company',
+  'Verify your email address if you haven’t already',
+  'Wait for company approval before logging in',
+  'Check that Caps Lock is off',
+  'Still stuck? Contact your company administrator',
+];
 
 // Employee Login Form
 const EmployeeLogin = () => {
@@ -187,180 +210,185 @@ const EmployeeLogin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
+    <AuthLayout
+      aside="employee"
+      topLink={{ label: 'Request to join', to: '/employee_register' }}
+      footer={
+        <p>
+          Don’t have an account?{' '}
           <button
-            onClick={handleGoBack}
-            className="mb-6 inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors duration-200"
+            type="button"
+            onClick={handleRegisterRedirect}
+            className="font-semibold text-brand-600 transition-colors hover:text-brand-700"
             disabled={isLoading}
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+            Request employee access
           </button>
-          <div className="flex items-center justify-center mb-6">
-            <div className="bg-blue-100 p-3 rounded-full">
-              <User className="h-8 w-8 text-blue-600" />
+        </p>
+      }
+    >
+      <div className="mx-auto w-full max-w-[440px] lg:max-w-none">
+        <button
+          type="button"
+          onClick={handleGoBack}
+          className="-ml-1 mb-5 inline-flex h-10 items-center gap-1.5 rounded-full pl-1 pr-3 text-sm font-medium text-ink/55 transition-colors hover:text-ink disabled:opacity-50"
+          disabled={isLoading}
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          Back
+        </button>
+
+        <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-ink/45">Employee account</p>
+        <h1 className="mt-2 font-display text-[30px] leading-tight text-ink sm:text-[34px]">Welcome back</h1>
+        <p className="mt-2 text-[15px] leading-relaxed text-ink/60">
+          Log in with your email or employee ID to see your swap requests and offers.
+        </p>
+
+        <Link
+          to="/company_login"
+          className="group mt-5 inline-block rounded-full bg-lavender-200 px-4 py-2 text-[13px] leading-snug text-lavender-700 transition-colors hover:bg-lavender-300 sm:text-sm"
+        >
+          Managing a company account?{' '}
+          <span className="whitespace-nowrap font-semibold">
+            Company log in
+            <ChevronRight className="ml-0.5 inline h-4 w-4 align-[-3px] transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+          </span>
+        </Link>
+
+        {/* Success Message */}
+        <div aria-live="polite">
+          {successMessage && (
+            <div className="alert alert-success mt-6">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+              <p>{successMessage}</p>
             </div>
-          </div>
-          <h2 className="text-3xl font-bold text-gray-900">Employee Login</h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Sign in to your employee account
-          </p>
+          )}
         </div>
 
-        <div className="space-y-6">
-          {/* Success Message */}
-          {successMessage && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
-                <p className="text-sm text-green-600">{successMessage}</p>
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-4">
-            {/* Email or Employee ID */}
-            <div>
-              <label htmlFor="identifier" className="block text-sm font-medium text-gray-700 mb-1">
-                Email or Employee ID *
-              </label>
-              <input
-                id="identifier"
-                name="identifier"
-                type="text"
-                value={formData.identifier}
-                onChange={handleChange}
-                onKeyPress={handleKeyPress}
-                className={`w-full px-3 py-2 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 ${errors.identifier ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                  }`}
-                placeholder="Enter your email or employee ID"
-                disabled={isLoading}
-              />
-              {errors.identifier && (
-                <div className="flex items-center space-x-1 mt-1">
-                  <AlertCircle className="h-4 w-4 text-red-500" />
-                  <p className="text-sm text-red-600">{errors.identifier}</p>
-                </div>
-              )}
-            </div>
-
-            {/* Password */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                Password *
-              </label>
-              <div className="relative">
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="current-password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  onKeyPress={handleKeyPress}
-                  className={`w-full px-3 py-2 pr-10 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 ${errors.password ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                    }`}
-                  placeholder="Enter your password"
-                  disabled={isLoading}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors duration-200"
-                  disabled={isLoading}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-              {errors.password && (
-                <div className="flex items-center space-x-1 mt-1">
-                  <AlertCircle className="h-4 w-4 text-red-500" />
-                  <p className="text-sm text-red-600">{errors.password}</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Submit Error */}
-          {errors.submit && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-              <div className="flex items-center space-x-2">
-                <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
-                <p className="text-sm text-red-600">{errors.submit}</p>
-              </div>
-            </div>
-          )}
-
-          {/* Forgot Password Link */}
-          <div className="text-right">
-            <button
-              type="button"
-              onClick={handleForgotPassword}
-              className="text-sm text-blue-600 hover:text-blue-700 transition-colors duration-200"
+        <div className="mt-8 space-y-5">
+          {/* Email or Employee ID */}
+          <div>
+            <label htmlFor="identifier" className="field-label">
+              Email or employee ID
+            </label>
+            <input
+              id="identifier"
+              name="identifier"
+              type="text"
+              autoComplete="username"
+              value={formData.identifier}
+              onChange={handleChange}
+              onKeyPress={handleKeyPress}
+              className={`field ${errors.identifier ? 'field-error' : ''}`}
+              placeholder="Enter your email or employee ID"
               disabled={isLoading}
-            >
-              Forgot your password?
-            </button>
+              aria-invalid={!!errors.identifier}
+              aria-describedby={errors.identifier ? 'identifier-error' : undefined}
+            />
+            {errors.identifier && <FieldError id="identifier-error">{errors.identifier}</FieldError>}
           </div>
 
-          {/* Submit Button */}
-          <button
-            onClick={handleSubmit}
-            disabled={isLoading || !formData.identifier || !formData.password}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center"
-          >
-            {isLoading ? (
-              <>
-                <Loader className="animate-spin h-4 w-4 mr-2" />
-                Signing In...
-              </>
-            ) : (
-              'Sign In'
-            )}
-          </button>
-
-          {/* Register Link */}
-          <div className="text-center">
-            <p className="text-sm text-gray-600">
-              Don't have an account?{' '}
+          {/* Password */}
+          <div>
+            <div className="flex items-end justify-between gap-3">
+              <label htmlFor="password" className="field-label">
+                Password
+              </label>
+              {/* Forgot Password Link */}
               <button
                 type="button"
-                onClick={handleRegisterRedirect}
-                className="font-medium text-blue-600 hover:text-blue-700 transition-colors duration-200"
+                onClick={handleForgotPassword}
+                className="inline-flex h-10 items-end pb-1.5 text-sm font-semibold text-brand-600 transition-colors hover:text-brand-700"
                 disabled={isLoading}
               >
-                Request employee access
+                Forgot password?
               </button>
-            </p>
-          </div>
-
-          {/* Status Information */}
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-gray-900 mb-2">Account Status Guide:</h4>
-            <ul className="text-xs text-gray-600 space-y-1">
-              <li>• <strong>Pending:</strong> Your request is awaiting company approval</li>
-              <li>• <strong>Rejected:</strong> Your request was declined by the company</li>
-              <li>• <strong>Approved:</strong> You can login and access shift swapping</li>
-              <li>• <strong>Need help?</strong> Contact your company administrator</li>
-            </ul>
-          </div>
-
-          {/* Help Section */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-blue-900 mb-2">Troubleshooting:</h4>
-            <ul className="text-xs text-blue-800 space-y-1">
-              <li>• Make sure you've submitted an employee request</li>
-              <li>• Verify your email address if you haven't already</li>
-              <li>• Wait for company approval before attempting to login</li>
-              <li>• Check that Caps Lock is off</li>
-              <li>• Contact support if issues persist</li>
-            </ul>
+            </div>
+            <div className="relative">
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
+                value={formData.password}
+                onChange={handleChange}
+                onKeyPress={handleKeyPress}
+                className={`field pr-12 ${errors.password ? 'field-error' : ''}`}
+                placeholder="Enter your password"
+                disabled={isLoading}
+                aria-invalid={!!errors.password}
+                aria-describedby={errors.password ? 'password-error' : undefined}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 flex w-12 items-center justify-center rounded-r-xl text-ink/45 transition-colors hover:text-ink disabled:cursor-not-allowed"
+                disabled={isLoading}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff className="h-[18px] w-[18px]" aria-hidden="true" /> : <Eye className="h-[18px] w-[18px]" aria-hidden="true" />}
+              </button>
+            </div>
+            {errors.password && <FieldError id="password-error">{errors.password}</FieldError>}
           </div>
         </div>
+
+        {/* Submit Error */}
+        <div aria-live="polite">
+          {errors.submit && (
+            <div className="alert alert-error mt-5">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+              <p>{errors.submit}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Submit Button */}
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={isLoading || !formData.identifier || !formData.password}
+          className="btn btn-primary btn-lg mt-7 w-full"
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              Logging in…
+            </>
+          ) : (
+            'Log in'
+          )}
+        </button>
+
+        {/* Status Information + Help */}
+        <details className="group mt-6 rounded-2xl bg-sand-200">
+          <summary className="flex min-h-[48px] cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-5 py-3 text-sm font-semibold text-ink [&::-webkit-details-marker]:hidden">
+            Can’t log in yet?
+            <ChevronDown className="h-4 w-4 shrink-0 text-ink/50 transition-transform duration-200 group-open:rotate-180" aria-hidden="true" />
+          </summary>
+          <div className="px-5 pb-5">
+            <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-ink/45">Request status</p>
+            <ul className="mt-2.5 space-y-2">
+              {STATUS_GUIDE.map((s) => (
+                <li key={s.status} className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[13px] text-ink/65">
+                  <StatusBadge status={s.status} className="min-w-[78px] justify-center" />
+                  {s.text}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-5 text-[12px] font-semibold uppercase tracking-[0.12em] text-ink/45">Troubleshooting</p>
+            <ul className="mt-2.5 space-y-1.5 text-[13px] leading-relaxed text-ink/65">
+              {TIPS.map((tip) => (
+                <li key={tip} className="flex gap-2">
+                  <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-ink/35" aria-hidden="true" />
+                  {tip}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </details>
       </div>
-    </div>
+    </AuthLayout>
   );
 };
 

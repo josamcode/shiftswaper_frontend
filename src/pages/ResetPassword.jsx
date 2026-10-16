@@ -1,6 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Key, ArrowLeft, Eye, EyeOff, Loader, AlertCircle, CheckCircle, Clock, RefreshCw } from 'lucide-react';
+import { KeyRound, ArrowLeft, Eye, EyeOff, Loader2, AlertCircle, Check, CheckCircle2, Clock, Info, RefreshCw } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import AuthLayout from '../components/layout/AuthLayout';
+
+const FieldError = ({ id, children }) => (
+  <p id={id} className="field-error-text">
+    <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+    {children}
+  </p>
+);
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -283,247 +291,263 @@ const ResetPassword = () => {
     return null; // Will redirect via useEffect
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <button
-            onClick={handleGoBack}
-            className="mb-6 inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors duration-200"
-            disabled={isLoading || isResending}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </button>
-          <div className="flex items-center justify-center mb-6">
-            <div className="bg-blue-100 p-3 rounded-full">
-              <Key className="h-8 w-8 text-blue-600" />
-            </div>
-          </div>
-          <h2 className="text-3xl font-bold text-gray-900">Reset Password</h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Enter the verification code sent to <span className="font-medium">{formData.email}</span>
-          </p>
-        </div>
+  // Live checklist mirroring the validation rules above (display only).
+  const passwordRequirements = [
+    { label: 'At least 6 characters', met: formData.newPassword.length >= 6 },
+    { label: 'An uppercase letter (A–Z)', met: /[A-Z]/.test(formData.newPassword) },
+    { label: 'A lowercase letter (a–z)', met: /[a-z]/.test(formData.newPassword) },
+    { label: 'A number (0–9)', met: /\d/.test(formData.newPassword) },
+  ];
 
-        <div className="space-y-6">
+  return (
+    <AuthLayout aside="reset" topLink={{ label: 'Log in', to: '/employee_login' }}>
+      <div className="mx-auto w-full max-w-[440px] lg:max-w-none">
+        <button
+          type="button"
+          onClick={handleGoBack}
+          className="-ml-1 mb-5 inline-flex h-10 items-center gap-1.5 rounded-full pl-1 pr-3 text-sm font-medium text-ink/55 transition-colors hover:text-ink disabled:opacity-50"
+          disabled={isLoading || isResending}
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          Back
+        </button>
+
+        <span className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-peach-200 text-peach-700 lg:hidden">
+          <KeyRound className="h-5 w-5" aria-hidden="true" />
+        </span>
+        <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-ink/45">Employee password reset</p>
+        <h1 className="mt-2 font-display text-[30px] leading-tight text-ink sm:text-[34px]">Choose a new password</h1>
+        <p className="mt-2 text-[15px] leading-relaxed text-ink/60">
+          Enter the verification code sent to <span className="break-all font-semibold text-ink">{formData.email}</span>
+        </p>
+
+        <div aria-live="polite">
           {/* Success Message */}
           {successMessage && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
-                <div>
-                  <p className="text-sm text-green-600">{successMessage}</p>
-                  <p className="text-xs text-green-500 mt-1">
-                    Redirecting to login page...
-                  </p>
-                </div>
+            <div className="alert alert-success mt-6">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+              <div>
+                <p>{successMessage}</p>
+                <p className="mt-1 text-[13px] opacity-80">
+                  Redirecting to login page...
+                </p>
               </div>
             </div>
           )}
 
           {/* Info Message */}
           {infoMessage && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="h-5 w-5 text-blue-500 flex-shrink-0" />
-                <p className="text-sm text-blue-600">{infoMessage}</p>
-              </div>
+            <div className="alert alert-info mt-6">
+              <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+              <p>{infoMessage}</p>
             </div>
           )}
+        </div>
 
-          <div className="space-y-4">
-            {/* Email Input (readonly) */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email Address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm bg-gray-50 text-gray-500 cursor-not-allowed"
-                disabled
-              />
-            </div>
-
-            {/* OTP Input */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Verification Code *
-              </label>
-              <div className="flex space-x-2 justify-center">
-                {formData.otp.map((digit, index) => (
-                  <input
-                    key={index}
-                    ref={el => otpRefs.current[index] = el}
-                    type="text"
-                    maxLength="1"
-                    value={digit}
-                    onChange={(e) => handleOTPChange(index, e.target.value)}
-                    onKeyDown={(e) => handleOTPKeyDown(index, e)}
-                    onPaste={handleOTPPaste}
-                    className={`w-12 h-12 text-center text-lg font-semibold border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 ${errors.otp ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                      }`}
-                    disabled={isLoading || isResending}
-                  />
-                ))}
-              </div>
-              {errors.otp && (
-                <div className="flex items-center justify-center space-x-1 mt-2">
-                  <AlertCircle className="h-4 w-4 text-red-500" />
-                  <p className="text-sm text-red-600">{errors.otp}</p>
-                </div>
-              )}
-            </div>
-
-            {/* New Password */}
-            <div>
-              <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                New Password *
-              </label>
-              <div className="relative">
-                <input
-                  id="newPassword"
-                  name="newPassword"
-                  type={showPasswords.newPassword ? 'text' : 'password'}
-                  value={formData.newPassword}
-                  onChange={handleChange}
-                  className={`w-full px-3 py-2 pr-10 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 ${errors.newPassword ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                    }`}
-                  placeholder="Enter new password"
-                  disabled={isLoading || isResending}
-                />
-                <button
-                  type="button"
-                  onClick={() => togglePasswordVisibility('newPassword')}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors duration-200"
-                  disabled={isLoading || isResending}
-                >
-                  {showPasswords.newPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-              {errors.newPassword && (
-                <div className="flex items-center space-x-1 mt-1">
-                  <AlertCircle className="h-4 w-4 text-red-500" />
-                  <p className="text-sm text-red-600">{errors.newPassword}</p>
-                </div>
-              )}
-            </div>
-
-            {/* Confirm Password */}
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                Confirm New Password *
-              </label>
-              <div className="relative">
-                <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type={showPasswords.confirmPassword ? 'text' : 'password'}
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  className={`w-full px-3 py-2 pr-10 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 ${errors.confirmPassword ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                    }`}
-                  placeholder="Confirm new password"
-                  disabled={isLoading || isResending}
-                />
-                <button
-                  type="button"
-                  onClick={() => togglePasswordVisibility('confirmPassword')}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors duration-200"
-                  disabled={isLoading || isResending}
-                >
-                  {showPasswords.confirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-              {errors.confirmPassword && (
-                <div className="flex items-center space-x-1 mt-1">
-                  <AlertCircle className="h-4 w-4 text-red-500" />
-                  <p className="text-sm text-red-600">{errors.confirmPassword}</p>
-                </div>
-              )}
-            </div>
+        <div className="mt-8 space-y-6">
+          {/* Email Input (readonly) */}
+          <div>
+            <label htmlFor="email" className="field-label">
+              Email address
+            </label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+              className="field cursor-not-allowed bg-sand-100 text-ink/55 hover:border-ink/15"
+              disabled
+            />
           </div>
 
-          {/* Submit Error */}
-          {errors.submit && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-              <div className="flex items-center space-x-2">
-                <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
-                <p className="text-sm text-red-600">{errors.submit}</p>
-              </div>
+          {/* OTP Input */}
+          <fieldset>
+            <legend className="field-label mb-0">Verification code</legend>
+            <div className="mt-2 grid max-w-[360px] grid-cols-6 gap-2 sm:gap-3">
+              {formData.otp.map((digit, index) => (
+                <input
+                  key={index}
+                  ref={el => otpRefs.current[index] = el}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength="1"
+                  value={digit}
+                  onChange={(e) => handleOTPChange(index, e.target.value)}
+                  onKeyDown={(e) => handleOTPKeyDown(index, e)}
+                  onPaste={handleOTPPaste}
+                  aria-label={`Digit ${index + 1} of 6`}
+                  aria-invalid={!!errors.otp}
+                  aria-describedby={errors.otp ? 'otp-error' : undefined}
+                  className={`h-14 w-full min-w-0 rounded-xl border text-center font-display text-2xl text-ink shadow-soft transition-[border-color,box-shadow] duration-200 focus:shadow-ring focus:outline-none disabled:cursor-not-allowed disabled:opacity-60 ${
+                    errors.otp
+                      ? 'border-rose-300 bg-rose-100 focus:border-rose-500'
+                      : 'border-ink/15 bg-white hover:border-ink/25 focus:border-brand-500'
+                  }`}
+                  disabled={isLoading || isResending}
+                />
+              ))}
             </div>
-          )}
+            {errors.otp && <FieldError id="otp-error">{errors.otp}</FieldError>}
 
-          {/* Submit Button */}
-          <button
-            onClick={handleSubmit}
-            disabled={isLoading || isResending || !formData.otp.join('') || !formData.newPassword || !formData.confirmPassword}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center"
-          >
-            {isLoading ? (
-              <>
-                <Loader className="animate-spin h-4 w-4 mr-2" />
-                Resetting Password...
-              </>
-            ) : (
-              'Reset Password'
-            )}
-          </button>
-
-          {/* Resend Button */}
-          <div className="text-center">
+            {/* Resend Button */}
             <button
+              type="button"
               onClick={handleResendOTP}
               disabled={isLoading || isResending || countdown > 0}
-              className="text-sm text-blue-600 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center mx-auto"
+              className="mt-2 inline-flex min-h-[40px] items-center gap-1.5 text-sm font-semibold text-brand-600 transition-colors hover:text-brand-700 disabled:cursor-not-allowed disabled:font-medium disabled:text-ink/45"
             >
               {isResending ? (
                 <>
-                  <Loader className="animate-spin h-4 w-4 mr-1" />
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                   Sending...
                 </>
               ) : countdown > 0 ? (
                 <>
-                  <Clock className="h-4 w-4 mr-1" />
-                  Resend available in {formatTime(countdown)}
+                  <Clock className="h-4 w-4" aria-hidden="true" />
+                  <span className="tabular-nums">Resend available in {formatTime(countdown)}</span>
                 </>
               ) : (
                 <>
-                  <RefreshCw className="h-4 w-4 mr-1" />
+                  <RefreshCw className="h-4 w-4" aria-hidden="true" />
                   Didn't receive the code? Resend
                 </>
               )}
             </button>
-          </div>
+          </fieldset>
 
-          {/* Password Requirements */}
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-gray-900 mb-2">Password Requirements:</h4>
-            <ul className="text-xs text-gray-600 space-y-1">
-              <li>• At least 6 characters long</li>
-              <li>• Contains uppercase letter (A-Z)</li>
-              <li>• Contains lowercase letter (a-z)</li>
-              <li>• Contains at least one number (0-9)</li>
+          {/* New Password */}
+          <div>
+            <label htmlFor="newPassword" className="field-label">
+              New password
+            </label>
+            <div className="relative">
+              <input
+                id="newPassword"
+                name="newPassword"
+                type={showPasswords.newPassword ? 'text' : 'password'}
+                autoComplete="new-password"
+                value={formData.newPassword}
+                onChange={handleChange}
+                className={`field pr-12 ${errors.newPassword ? 'field-error' : ''}`}
+                placeholder="Enter new password"
+                disabled={isLoading || isResending}
+                aria-invalid={!!errors.newPassword}
+                aria-describedby={errors.newPassword ? 'newPassword-error password-requirements' : 'password-requirements'}
+              />
+              <button
+                type="button"
+                onClick={() => togglePasswordVisibility('newPassword')}
+                className="absolute inset-y-0 right-0 flex w-12 items-center justify-center rounded-r-xl text-ink/45 transition-colors hover:text-ink disabled:cursor-not-allowed"
+                disabled={isLoading || isResending}
+                aria-label={showPasswords.newPassword ? 'Hide new password' : 'Show new password'}
+              >
+                {showPasswords.newPassword ? <EyeOff className="h-[18px] w-[18px]" aria-hidden="true" /> : <Eye className="h-[18px] w-[18px]" aria-hidden="true" />}
+              </button>
+            </div>
+            {errors.newPassword && <FieldError id="newPassword-error">{errors.newPassword}</FieldError>}
+
+            {/* Password Requirements */}
+            <ul id="password-requirements" className="mt-3 grid grid-cols-1 gap-x-4 gap-y-1.5 sm:grid-cols-2">
+              {passwordRequirements.map((req) => (
+                <li
+                  key={req.label}
+                  className={`flex items-center gap-2 text-[13px] transition-colors ${req.met ? 'text-mint-700' : 'text-ink/55'}`}
+                >
+                  <span
+                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full transition-colors ${
+                      req.met ? 'bg-mint-500 text-white' : 'border border-ink/20 bg-white'
+                    }`}
+                    aria-hidden="true"
+                  >
+                    {req.met && <Check className="h-2.5 w-2.5" strokeWidth={3} />}
+                  </span>
+                  {req.label}
+                  <span className="sr-only">{req.met ? '(met)' : '(not met yet)'}</span>
+                </li>
+              ))}
             </ul>
           </div>
 
-          {/* Security Notice */}
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-amber-900 mb-2">Security Tips:</h4>
-            <ul className="text-xs text-amber-800 space-y-1">
-              <li>• The verification code expires in 15 minutes</li>
-              <li>• Don't share your verification code with anyone</li>
-              <li>• Choose a strong, unique password</li>
-              <li>• Keep your login credentials secure</li>
-            </ul>
+          {/* Confirm Password */}
+          <div>
+            <label htmlFor="confirmPassword" className="field-label">
+              Confirm new password
+            </label>
+            <div className="relative">
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                type={showPasswords.confirmPassword ? 'text' : 'password'}
+                autoComplete="new-password"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                className={`field pr-12 ${errors.confirmPassword ? 'field-error' : ''}`}
+                placeholder="Confirm new password"
+                disabled={isLoading || isResending}
+                aria-invalid={!!errors.confirmPassword}
+                aria-describedby={errors.confirmPassword ? 'confirmPassword-error' : undefined}
+              />
+              <button
+                type="button"
+                onClick={() => togglePasswordVisibility('confirmPassword')}
+                className="absolute inset-y-0 right-0 flex w-12 items-center justify-center rounded-r-xl text-ink/45 transition-colors hover:text-ink disabled:cursor-not-allowed"
+                disabled={isLoading || isResending}
+                aria-label={showPasswords.confirmPassword ? 'Hide confirmed password' : 'Show confirmed password'}
+              >
+                {showPasswords.confirmPassword ? <EyeOff className="h-[18px] w-[18px]" aria-hidden="true" /> : <Eye className="h-[18px] w-[18px]" aria-hidden="true" />}
+              </button>
+            </div>
+            {errors.confirmPassword && <FieldError id="confirmPassword-error">{errors.confirmPassword}</FieldError>}
           </div>
         </div>
+
+        {/* Submit Error */}
+        <div aria-live="polite">
+          {errors.submit && (
+            <div className="alert alert-error mt-6">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+              <p>{errors.submit}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Submit Button */}
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={isLoading || isResending || !formData.otp.join('') || !formData.newPassword || !formData.confirmPassword}
+          className="btn btn-primary btn-lg mt-7 w-full"
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              Resetting password…
+            </>
+          ) : (
+            'Reset password'
+          )}
+        </button>
+
+        {/* Security Notice */}
+        <div className="card-sand mt-7 p-5">
+          <h2 className="text-sm font-semibold text-ink">Security tips</h2>
+          <ul className="mt-2.5 space-y-1.5 text-[13px] leading-relaxed text-ink/65">
+            {[
+              'The verification code expires in 15 minutes',
+              'Don’t share your verification code with anyone',
+              'Choose a strong, unique password',
+              'Keep your login credentials secure',
+            ].map((tip) => (
+              <li key={tip} className="flex gap-2">
+                <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-ink/35" aria-hidden="true" />
+                {tip}
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
-    </div>
+    </AuthLayout>
   );
 };
 

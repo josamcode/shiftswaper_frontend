@@ -1,6 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, ArrowLeft, Loader, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { ArrowLeft, ArrowRight, KeyRound, Loader2, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import AuthLayout from '../components/layout/AuthLayout';
+
+const FieldError = ({ id, children }) => (
+  <p id={id} className="field-error-text">
+    <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+    {children}
+  </p>
+);
+
+const Bullet = ({ children }) => (
+  <li className="flex gap-2">
+    <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-ink/35" aria-hidden="true" />
+    <span>{children}</span>
+  </li>
+);
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
@@ -167,162 +182,154 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <button
-            onClick={handleGoBack}
-            className="mb-6 inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors duration-200"
-            disabled={isLoading}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Login
-          </button>
-          <div className="flex items-center justify-center mb-6">
-            <div className="bg-blue-100 p-3 rounded-full">
-              <Mail className="h-8 w-8 text-blue-600" />
+    <AuthLayout aside="reset" topLink={{ label: 'Log in', to: '/employee_login' }}>
+      <div className="mx-auto w-full max-w-[440px] lg:max-w-none">
+        <button
+          type="button"
+          onClick={handleGoBack}
+          className="-ml-1 mb-5 inline-flex h-10 items-center gap-1.5 rounded-full pl-1 pr-3 text-sm font-medium text-ink/55 transition-colors hover:text-ink disabled:opacity-50"
+          disabled={isLoading}
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          Back to log in
+        </button>
+
+        <span className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-peach-200 text-peach-700 lg:hidden">
+          <KeyRound className="h-5 w-5" aria-hidden="true" />
+        </span>
+        <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-ink/45">Employee password reset</p>
+        <h1 className="mt-2 font-display text-[30px] leading-tight text-ink sm:text-[34px]">Forgot your password?</h1>
+        <p className="mt-2 text-[15px] leading-relaxed text-ink/60">
+          No worries. Enter the email you registered with and we’ll send you a 6-digit code to reset it.
+        </p>
+
+        {/* Success Message */}
+        <div aria-live="polite">
+          {successMessage && (
+            <div className="alert alert-success mt-6">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+              <div>
+                <p>{successMessage}</p>
+                {countdown > 0 && (
+                  <p className="mt-1 text-[13px] opacity-80">
+                    Redirecting to reset page in a moment...
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
-          <h2 className="text-3xl font-bold text-gray-900">Forgot Password?</h2>
-          <p className="mt-2 text-sm text-gray-600">
-            No worries! Enter your email address and we'll send you a code to reset your password.
-          </p>
+          )}
         </div>
 
-        <div className="space-y-6">
-          {/* Success Message */}
-          {successMessage && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
-                <div>
-                  <p className="text-sm text-green-600">{successMessage}</p>
-                  {countdown > 0 && (
-                    <p className="text-xs text-green-500 mt-1">
-                      Redirecting to reset page in a moment...
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
+        <div className="mt-8">
+          {/* Email Input */}
+          <label htmlFor="email" className="field-label">
+            Email address
+          </label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            value={formData.email}
+            onChange={handleChange}
+            onKeyPress={handleKeyPress}
+            className={`field ${errors.email ? 'field-error' : ''}`}
+            placeholder="Enter your registered email address"
+            disabled={isLoading}
+            aria-invalid={!!errors.email}
+            aria-describedby={errors.email ? 'email-error' : undefined}
+          />
+          {errors.email && <FieldError id="email-error">{errors.email}</FieldError>}
+        </div>
 
-          <div className="space-y-4">
-            {/* Email Input */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email Address *
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                value={formData.email}
-                onChange={handleChange}
-                onKeyPress={handleKeyPress}
-                className={`w-full px-3 py-2 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 ${errors.email ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                  }`}
-                placeholder="Enter your registered email address"
-                disabled={isLoading}
-              />
-              {errors.email && (
-                <div className="flex items-center space-x-1 mt-1">
-                  <AlertCircle className="h-4 w-4 text-red-500" />
-                  <p className="text-sm text-red-600">{errors.email}</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Submit Error */}
+        {/* Submit Error */}
+        <div aria-live="polite">
           {errors.submit && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-              <div className="flex items-center space-x-2">
-                <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
-                <p className="text-sm text-red-600">{errors.submit}</p>
-              </div>
+            <div className="alert alert-error mt-5">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+              <p>{errors.submit}</p>
             </div>
           )}
+        </div>
 
-          {/* Submit Button */}
-          <button
-            onClick={handleSubmit}
-            disabled={isLoading || !formData.email.trim()}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center"
-          >
-            {isLoading ? (
-              <>
-                <Loader className="animate-spin h-4 w-4 mr-2" />
-                Sending Reset Code...
-              </>
-            ) : (
-              'Send Reset Code'
-            )}
-          </button>
-
-          {/* Resend Button */}
-          {successMessage && (
-            <div className="text-center">
-              <button
-                onClick={handleResend}
-                disabled={isLoading || countdown > 0}
-                className="text-sm text-blue-600 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center mx-auto"
-              >
-                {countdown > 0 ? (
-                  <>
-                    <Clock className="h-4 w-4 mr-1" />
-                    Resend available in {formatTime(countdown)}
-                  </>
-                ) : (
-                  'Didn\'t receive the code? Resend'
-                )}
-              </button>
-            </div>
+        {/* Submit Button */}
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={isLoading || !formData.email.trim()}
+          className="btn btn-primary btn-lg mt-7 w-full"
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              Sending reset code…
+            </>
+          ) : (
+            'Send reset code'
           )}
+        </button>
 
-          {/* Manual Navigation Link */}
-          {successMessage && (
-            <div className="text-center">
-              <button
-                onClick={() => navigate('/reset-password', {
-                  state: {
-                    email: formData.email.toLowerCase().trim(),
-                    message: 'Please check your email for the OTP code.',
-                    type: 'info'
-                  }
-                })}
-                className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors duration-200"
-              >
-                Continue to Reset Password →
-              </button>
-            </div>
-          )}
+        {successMessage && (
+          <div className="mt-4 flex flex-col items-center gap-1">
+            {/* Resend Button */}
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={isLoading || countdown > 0}
+              className="inline-flex min-h-[40px] items-center gap-1.5 text-sm font-semibold text-brand-600 transition-colors hover:text-brand-700 disabled:cursor-not-allowed disabled:font-medium disabled:text-ink/45"
+            >
+              {countdown > 0 ? (
+                <>
+                  <Clock className="h-4 w-4" aria-hidden="true" />
+                  <span className="tabular-nums">Resend available in {formatTime(countdown)}</span>
+                </>
+              ) : (
+                'Didn\'t receive the code? Resend'
+              )}
+            </button>
 
-          {/* Information Section */}
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-gray-900 mb-2">What happens next?</h4>
-            <ul className="text-xs text-gray-600 space-y-1">
-              <li>• We'll send a 6-digit code to your email address</li>
-              <li>• The code expires in 15 minutes for security</li>
-              <li>• You can request a new code if needed</li>
-              <li>• Use the code to create a new password</li>
+            {/* Manual Navigation Link */}
+            <button
+              type="button"
+              onClick={() => navigate('/reset-password', {
+                state: {
+                  email: formData.email.toLowerCase().trim(),
+                  message: 'Please check your email for the OTP code.',
+                  type: 'info'
+                }
+              })}
+              className="link-arrow min-h-[40px] text-sm"
+            >
+              Continue to reset password
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
+        )}
+
+        {/* Information Section */}
+        <div className="card-sand mt-7 space-y-5 p-5">
+          <div>
+            <h2 className="text-sm font-semibold text-ink">What happens next</h2>
+            <ul className="mt-2.5 space-y-1.5 text-[13px] leading-relaxed text-ink/65">
+              <Bullet>We’ll email you a 6-digit code</Bullet>
+              <Bullet>The code expires in 15 minutes</Bullet>
+              <Bullet>You can request a new code if needed</Bullet>
+              <Bullet>Use the code to choose a new password</Bullet>
             </ul>
           </div>
-
           {/* Security Notice */}
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-amber-900 mb-2">Security Notice:</h4>
-            <ul className="text-xs text-amber-800 space-y-1">
-              <li>• Only registered employees can reset passwords</li>
-              <li>• If you don't have an account, request employee access first</li>
-              <li>• Check your spam folder if you don't see the email</li>
-              <li>• Contact your company administrator if you need help</li>
+          <div>
+            <h2 className="text-sm font-semibold text-ink">Good to know</h2>
+            <ul className="mt-2.5 space-y-1.5 text-[13px] leading-relaxed text-ink/65">
+              <Bullet>Only registered employees can reset passwords here</Bullet>
+              <Bullet>No account yet? Request employee access first</Bullet>
+              <Bullet>Check your spam folder if the email doesn’t arrive</Bullet>
+              <Bullet>Contact your company administrator if you need help</Bullet>
             </ul>
           </div>
         </div>
       </div>
-    </div>
+    </AuthLayout>
   );
 };
 

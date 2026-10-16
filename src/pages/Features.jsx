@@ -1,679 +1,321 @@
-import React, { useState } from 'react';
+import React, { useRef } from 'react';
+import { Link } from 'react-router-dom';
 import {
-  Zap,
   ArrowLeftRight,
-  Building2,
-  Bell,
-  Search,
-  Shield,
-  Users,
-  Calendar,
-  Clock,
-  CheckCircle,
   ArrowRight,
-  Eye,
-  RefreshCw,
-  Filter,
-  BarChart3,
-  Lock,
-  Smartphone,
-  Mail,
-  Settings,
-  UserCheck,
-  Hash,
-  Upload,
-  Download,
-  MessageCircle,
-  Star,
-  Globe,
-  Handshake,
+  BadgeCheck,
+  BellRing,
   CalendarDays,
-  Plus,
-  Edit,
-  Trash2,
-  AlertCircle,
-  TrendingUp,
-  Database,
-  FileText,
-  Target,
-  XCircle
+  Check,
+  FileSpreadsheet,
+  Fingerprint,
+  Handshake,
+  KeyRound,
+  LockKeyhole,
+  MailCheck,
+  ShieldCheck,
+  UserCheck,
+  Users,
 } from 'lucide-react';
+import { Reveal, useInView } from '../motion';
+import { ClosingCTA, PageHero } from '../components/marketing/Sections';
+import { DayOffMock, EmailMock, EmployeeIdsMock, JoinRequestsMock, ShiftRequestCard } from '../components/product/Mockups';
+import { ApprovalVignette, OffersVignette } from '../components/product/Vignettes';
+
+const NAV = [
+  ['shift-swaps', 'Shift swaps'],
+  ['counter-offers', 'Counter-offers'],
+  ['day-off-swaps', 'Day-off swaps'],
+  ['approvals', 'Approvals'],
+  ['join-requests', 'Join requests'],
+  ['employee-ids', 'Employee IDs'],
+  ['roles', 'Roles'],
+  ['notifications', 'Notifications'],
+  ['security', 'Security'],
+];
+
+const FEATURES = [
+  {
+    id: 'shift-swaps',
+    icon: Handshake,
+    label: 'Shift swaps',
+    title: 'A shared board for every shift that needs a swap',
+    body: 'Employees post the shift they need to change — date and time, a reason, the shift they’d prefer and any overtime. Colleagues in the same position see it on their board right away.',
+    points: [
+      'Urgent (within 24 hours), Soon (within 48 hours) and Available badges',
+      'Search by name, email or reason, filter by date range, sort by urgency',
+      'Edit or withdraw a request until offers start arriving',
+    ],
+    tone: 'linear-gradient(140deg, #EDEAFB, #DCEEFF)',
+    visual: () => (
+      <div className="w-full max-w-[400px] space-y-3">
+        <ShiftRequestCard who="maya" urgency="urgent" date="Tomorrow" time="07:00 – 15:00" desired="15:00 – 23:00" />
+        <div className="sm:translate-x-8">
+          <ShiftRequestCard who="lina" urgency="soon" status="offers_received" offers={2} date="Thu, Oct 23" time="15:00 – 23:00" desired="07:00 – 15:00" reason="University exam that evening" />
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'counter-offers',
+    icon: ArrowLeftRight,
+    label: 'Counter-offers',
+    title: 'Colleagues offer what actually works for them',
+    body: 'Instead of a simple yes or no, teammates propose an alternative time on the same day. The requester compares offers side by side and accepts the best one — the rest are declined automatically.',
+    points: ['Offers stay on the same calendar day as the original shift', 'An email arrives with every new offer', 'Accepting one offer closes the others in one step'],
+    tone: 'linear-gradient(140deg, #FDEBDF, #FCE7EA)',
+    visual: (active) => <OffersVignette active={active} />,
+  },
+  {
+    id: 'day-off-swaps',
+    icon: CalendarDays,
+    label: 'Day-off swaps',
+    title: 'Trade a day off for the one you really need',
+    body: 'Post your scheduled day off together with the day you’d like instead. Colleagues propose matches, you accept the one that fits, and a supervisor approves the change.',
+    points: ['Filter the board by original date, requested date or either', 'Shift details are attached to the requested day', 'Same approval and notification trail as shift swaps'],
+    tone: 'linear-gradient(140deg, #E2F4EE, #DCEEFF)',
+    visual: () => <DayOffMock className="w-full max-w-[420px]" />,
+  },
+  {
+    id: 'approvals',
+    icon: BadgeCheck,
+    label: 'Supervisor approval',
+    title: 'Nothing changes until a supervisor signs off',
+    body: 'Once both employees agree, the swap goes to their supervisors. Either supervisor involved can approve or reject it, and both employees are told the outcome by email.',
+    points: ['Both shifts shown side by side before deciding', 'Pending swaps prioritised by how soon the shift starts', 'Decisions are kept on record for moderators to review'],
+    tone: 'linear-gradient(140deg, #FCF3D7, #E2F4EE)',
+    visual: (active) => <ApprovalVignette active={active} />,
+  },
+  {
+    id: 'join-requests',
+    icon: UserCheck,
+    label: 'Join requests',
+    title: 'You decide who joins your company',
+    body: 'Employees choose your company and enter an employee ID you’ve already approved. You review each request, assign their supervisor and approve — or reject it with a reason they’ll see when they sign in.',
+    points: ['Search and filter requests by status and position', 'Moderators can be approved without a supervisor', 'Employees confirm their email with a one-time code'],
+    tone: 'linear-gradient(140deg, #E2F4EE, #F7F4F1)',
+    visual: (active) => <JoinRequestsMock className="w-full max-w-[400px]" approvedIndex={active ? 0 : -1} />,
+  },
+  {
+    id: 'employee-ids',
+    icon: FileSpreadsheet,
+    label: 'Employee IDs & import',
+    title: 'Load your whole roster from a spreadsheet',
+    body: 'Keep a whitelist of employee IDs so only real team members can register. Add IDs one at a time — with an auto-generate option — or upload a file.',
+    points: ['Excel (.xlsx, .xls) and CSV files up to 10 MB', 'Columns for employee ID, name and position', 'Duplicates and invalid rows reported line by line'],
+    tone: 'linear-gradient(140deg, #DCEEFF, #EDEAFB)',
+    visual: (active) => <EmployeeIdsMock className="w-full max-w-[420px]" progress={active ? 1 : 0.12} />,
+  },
+];
+
+const ROLES = [
+  {
+    role: 'Company',
+    tone: 'bg-mint-200 text-mint-700',
+    can: ['Register and verify the company by email', 'Manage the employee-ID whitelist and imports', 'Approve join requests and assign supervisors'],
+  },
+  {
+    role: 'Supervisor',
+    tone: 'bg-butter-200 text-butter-700',
+    can: ['Approve or reject swaps they’re responsible for', 'See pending swaps ranked by urgency', 'Post their own swap requests'],
+  },
+  {
+    role: 'Expert & SME',
+    tone: 'bg-lavender-200 text-lavender-700',
+    can: ['Post shift and day-off swap requests', 'Browse requests from colleagues in the same position', 'Send offers and accept the one that works'],
+  },
+  {
+    role: 'Moderator',
+    tone: 'bg-brand-100 text-brand-700',
+    can: ['Read-only view of approved and rejected swaps', 'Search and filter across the company', 'No ability to change requests'],
+  },
+];
+
+const SECURITY = [
+  { icon: LockKeyhole, title: 'Hashed passwords', body: 'Passwords are hashed with bcrypt before they’re stored — never kept in plain text.' },
+  { icon: Fingerprint, title: 'Signed sessions', body: 'Every signed-in request carries a signed token that expires after 24 hours.' },
+  { icon: MailCheck, title: 'Verified emails', body: 'Companies and employees confirm their email address with a 6-digit code.' },
+  { icon: KeyRound, title: 'Brute-force limits', body: 'Codes have a resend cooldown, and repeated wrong attempts lock verification for 30 minutes.' },
+];
+
+const FeatureRow = ({ f, i }) => {
+  const ref = useRef(null);
+  const inView = useInView(ref, { rootMargin: '-10% 0px -10% 0px' });
+  const flip = i % 2 === 1;
+  return (
+    <section id={f.id} className="scroll-mt-32 py-14 lg:py-20" aria-labelledby={`${f.id}-title`}>
+      <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-20">
+        <Reveal className={`min-w-0 ${flip ? 'lg:order-2' : ''}`}>
+          <span className="chip bg-white text-ink/70 shadow-soft">
+            <f.icon className="h-3.5 w-3.5" aria-hidden="true" /> {f.label}
+          </span>
+          <h2 id={`${f.id}-title`} className="type-h3 mt-5 max-w-[18ch]">
+            {f.title}
+          </h2>
+          <p className="mt-4 max-w-[540px] text-[17px] leading-relaxed text-ink/60">{f.body}</p>
+          <ul className="mt-6 space-y-3">
+            {f.points.map((pt) => (
+              <li key={pt} className="flex items-start gap-3 text-[15px] text-ink/75">
+                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-mint-200 text-mint-700">
+                  <Check className="h-3 w-3" aria-hidden="true" />
+                </span>
+                {pt}
+              </li>
+            ))}
+          </ul>
+        </Reveal>
+        <Reveal delay={100} className={`min-w-0 ${flip ? 'lg:order-1' : ''}`}>
+          <div
+            ref={ref}
+            className="relative flex min-h-[380px] items-center justify-center overflow-hidden rounded-[32px] p-6 sm:min-h-[460px] sm:p-12"
+            style={{ background: f.tone }}
+            aria-hidden="true"
+          >
+            <span className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/35 blur-2xl" />
+            <span className="absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-white/30 blur-2xl" />
+            <div className="relative flex w-full justify-center">{f.visual(inView)}</div>
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  );
+};
 
 const Features = () => {
-  const [activeCategory, setActiveCategory] = useState('all');
-  const [selectedFeature, setSelectedFeature] = useState(null);
-
-  const categories = [
-    { id: 'all', name: 'All Features', icon: Star },
-    { id: 'swapping', name: 'Shift Management', icon: Zap },
-    { id: 'management', name: 'Company Tools', icon: Building2 },
-    { id: 'communication', name: 'Communication', icon: Bell },
-    { id: 'security', name: 'Security & Privacy', icon: Shield }
-  ];
-
-  const mainFeatures = [
-    {
-      id: 'shift-swapping',
-      title: 'Advanced Shift Swapping',
-      category: 'swapping',
-      description: 'Intelligent shift exchange system with counter-offers and real-time negotiations',
-      icon: Zap,
-      color: 'bg-purple-50 border-purple-200',
-      iconColor: 'text-purple-600',
-      features: [
-        'Create detailed shift swap requests with timing flexibility',
-        'Receive and make counter offers with different shift times',
-        'Accept specific offers from multiple proposals',
-        'Same-day requirement validation with flexible timing options',
-        'Automatic conflict detection and resolution suggestions'
-      ],
-      benefits: [
-        'Reduce scheduling conflicts by 80%',
-        'Save 15+ hours per week on manual coordination',
-        'Increase employee satisfaction with flexible options',
-        'Maintain operational coverage with smart matching'
-      ]
-    },
-    {
-      id: 'dayoff-swapping',
-      title: 'Day-Off Management',
-      category: 'swapping',
-      description: 'Seamless day-off exchanges with intelligent matching and supervisor oversight',
-      icon: ArrowLeftRight,
-      color: 'bg-orange-50 border-orange-200',
-      iconColor: 'text-orange-600',
-      features: [
-        'Request day-off swaps with automatic colleague matching',
-        'Include optional shift details for comprehensive planning',
-        'Multiple match proposals with easy selection interface',
-        'Calendar integration for visual schedule planning',
-        'Bulk day-off management for special events or holidays'
-      ],
-      benefits: [
-        'Improve work-life balance for all employees',
-        'Reduce absenteeism through flexible planning',
-        'Maintain fair distribution of preferred days off',
-        'Streamline holiday and vacation scheduling'
-      ]
-    },
-    {
-      id: 'company-management',
-      title: 'Company Management Suite',
-      category: 'management',
-      description: 'Comprehensive tools for company owners to manage employees and operations',
-      icon: Building2,
-      color: 'bg-blue-50 border-blue-200',
-      iconColor: 'text-blue-600',
-      features: [
-        'Employee registration approval with detailed review process',
-        'Supervisor assignment and hierarchical management',
-        'Company-wide visibility and control over all operations',
-        'Employee ID management with bulk upload capabilities',
-        'Custom company policies and approval workflows'
-      ],
-      benefits: [
-        'Maintain complete control over workforce management',
-        'Ensure only authorized employees access the system',
-        'Streamline onboarding with automated workflows',
-        'Scale efficiently as your business grows'
-      ]
-    },
-    {
-      id: 'real-time-notifications',
-      title: 'Smart Notification System',
-      category: 'communication',
-      description: 'Comprehensive email and in-app notifications keep everyone informed',
-      icon: Bell,
-      color: 'bg-green-50 border-green-200',
-      iconColor: 'text-green-600',
-      features: [
-        'Instant email notifications for all swap activities',
-        'Customizable notification preferences by user type',
-        'Professional HTML email templates with branding',
-        'In-app notification center with action buttons',
-        'Digest emails for managers with daily/weekly summaries'
-      ],
-      benefits: [
-        'Never miss important swap requests or approvals',
-        'Reduce response times with instant alerts',
-        'Maintain professional communication standards',
-        'Keep all stakeholders informed automatically'
-      ]
-    },
-    {
-      id: 'advanced-filtering',
-      title: 'Advanced Search & Filtering',
-      category: 'swapping',
-      description: 'Powerful search capabilities to find exactly what you need, when you need it',
-      icon: Search,
-      color: 'bg-indigo-50 border-indigo-200',
-      iconColor: 'text-indigo-600',
-      features: [
-        'Multi-criteria search across all requests and employees',
-        'Smart filters by date range, status, position, and urgency',
-        'Saved search preferences for frequently used filters',
-        'Real-time search results with instant updates',
-        'Export filtered results for reporting and analysis'
-      ],
-      benefits: [
-        'Find perfect swap matches in seconds',
-        'Reduce time spent browsing through requests',
-        'Focus on most urgent or relevant swaps first',
-        'Generate custom reports with filtered data'
-      ]
-    },
-    {
-      id: 'approval-system',
-      title: 'Multi-Level Approval System',
-      category: 'management',
-      description: 'Flexible approval workflows with supervisor oversight and company control',
-      icon: UserCheck,
-      color: 'bg-cyan-50 border-cyan-200',
-      iconColor: 'text-cyan-600',
-      features: [
-        'Hierarchical approval process with supervisor assignments',
-        'Customizable approval rules based on company policies',
-        'Bulk approval capabilities for managers',
-        'Detailed approval history and audit trails',
-        'Escalation procedures for complex requests'
-      ],
-      benefits: [
-        'Maintain operational control while empowering employees',
-        'Ensure swaps comply with business requirements',
-        'Create accountability with clear approval chains',
-        'Reduce management overhead with smart defaults'
-      ]
-    },
-    {
-      id: 'security-privacy',
-      title: 'Enterprise Security & Privacy',
-      category: 'security',
-      description: 'Bank-level security with comprehensive privacy controls and compliance',
-      icon: Shield,
-      color: 'bg-red-50 border-red-200',
-      iconColor: 'text-red-600',
-      features: [
-        'SSL/TLS encryption for all data transmission',
-        'Role-based access controls with granular permissions',
-        'Multi-factor authentication support',
-        'Regular security audits and compliance monitoring',
-        'GDPR and privacy law compliance built-in'
-      ],
-      benefits: [
-        '99.9% uptime with enterprise-grade infrastructure',
-        'Protect sensitive employee and company data',
-        'Meet regulatory requirements automatically',
-        'Peace of mind with industry-leading security'
-      ]
-    },
-    {
-      id: 'analytics-reporting',
-      title: 'Analytics & Reporting',
-      category: 'management',
-      description: 'Comprehensive insights into your workforce scheduling patterns and trends',
-      icon: BarChart3,
-      color: 'bg-teal-50 border-teal-200',
-      iconColor: 'text-teal-600',
-      features: [
-        'Real-time dashboard with key performance metrics',
-        'Detailed reports on swap patterns and employee activity',
-        'Trend analysis for better workforce planning',
-        'Custom report generation with export capabilities',
-        'Predictive analytics for scheduling optimization'
-      ],
-      benefits: [
-        'Make data-driven scheduling decisions',
-        'Identify and address potential staffing issues early',
-        'Optimize employee satisfaction and productivity',
-        'Demonstrate ROI and cost savings to stakeholders'
-      ]
-    },
-    {
-      id: 'mobile-responsive',
-      title: 'Mobile-First Design',
-      category: 'communication',
-      description: 'Fully responsive platform that works perfectly on all devices',
-      icon: Smartphone,
-      color: 'bg-pink-50 border-pink-200',
-      iconColor: 'text-pink-600',
-      features: [
-        'Native mobile experience with touch-optimized interface',
-        'Offline capabilities for viewing schedules and requests',
-        'Push notifications on mobile devices',
-        'Quick actions for approvals and responses on mobile',
-        'Consistent experience across desktop, tablet, and phone'
-      ],
-      benefits: [
-        'Access schedules and make swaps from anywhere',
-        'Faster response times with mobile notifications',
-        'Improved user adoption across all age groups',
-        'No need for separate mobile apps or downloads'
-      ]
-    }
-  ];
-
-  const quickFeatures = [
-    { name: 'Real-time Updates', icon: RefreshCw, description: 'Live dashboard updates' },
-    { name: 'Email Integration', icon: Mail, description: 'Professional notifications' },
-    { name: 'Bulk Operations', icon: Database, description: 'Mass import/export' },
-    { name: 'Audit Trails', icon: FileText, description: 'Complete activity logs' },
-    { name: 'Custom Branding', icon: Settings, description: 'White-label options' },
-    { name: 'API Access', icon: Globe, description: 'Integration capabilities' },
-    { name: 'Multi-language', icon: MessageCircle, description: 'Global workforce support' },
-    { name: 'Backup & Recovery', icon: Shield, description: 'Data protection' }
-  ];
-
-  const filteredFeatures = activeCategory === 'all'
-    ? mainFeatures
-    : mainFeatures.filter(feature => feature.category === activeCategory);
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-gradient-to-br from-primary-50 to-white py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="flex items-center justify-center space-x-3 mb-6">
-            <Star className="h-12 w-12 text-blue-600" />
-            <h1 className="text-5xl lg:text-6xl font-heading font-bold text-secondary-900">
-              Platform Features
-            </h1>
-          </div>
-          <p className="text-xl lg:text-2xl text-secondary-600 max-w-4xl mx-auto mb-8">
-            Discover the comprehensive tools and capabilities that make Shiftswaper
-            the ultimate solution for modern workforce scheduling.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-primary-600 hover:bg-primary-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 flex items-center justify-center group">
-              Try All Features Free
-              <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
-            </button>
-            <button className="border-2 border-primary-600 text-primary-600 hover:bg-primary-50 px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200">
-              Schedule Demo
-            </button>
-          </div>
+    <div className="bg-canvas">
+      <PageHero
+        eyebrow="Features"
+        title="Everything a fair shift swap needs"
+        lead="From the first join request to the final supervisor decision, Shiftswaper keeps every swap in one clear, approved flow."
+      />
+
+      <nav aria-label="Feature sections" className="sticky top-[70px] z-30 border-y border-ink/[0.06] bg-canvas/90 backdrop-blur">
+        <div className="no-scrollbar container-site flex gap-2 overflow-x-auto py-3">
+          {NAV.map(([id, label]) => (
+            <Link key={id} to={`#${id}`} className="shrink-0 rounded-full bg-white px-3.5 py-1.5 text-sm text-ink/70 shadow-soft transition-colors hover:bg-ink hover:text-white">
+              {label}
+            </Link>
+          ))}
         </div>
-      </header>
+      </nav>
 
-      {/* Feature Categories */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl lg:text-4xl font-heading font-bold text-secondary-900 mb-4">
-              Explore by Category
-            </h2>
-            <p className="text-xl text-secondary-600">
-              Browse features by functionality to find exactly what you need
-            </p>
+      <div className="container-site pt-6">
+        {FEATURES.map((f, i) => (
+          <FeatureRow key={f.id} f={f} i={i} />
+        ))}
+      </div>
+
+      {/* Roles */}
+      <section id="roles" className="scroll-mt-32 bg-sand-100 py-20 lg:py-28" aria-labelledby="roles-title">
+        <div className="container-site">
+          <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
+            <Reveal>
+              <span className="chip bg-white text-ink/70 shadow-soft">
+                <Users className="h-3.5 w-3.5" aria-hidden="true" /> Roles & visibility
+              </span>
+              <h2 id="roles-title" className="type-h3 mt-5 max-w-[16ch]">
+                Everyone sees exactly what they need
+              </h2>
+            </Reveal>
+            <Reveal delay={80}>
+              <p className="max-w-[560px] text-[17px] leading-relaxed text-ink/60 lg:justify-self-end">
+                Employees only see requests from colleagues in the same position, supervisors see the swaps that need their decision, and companies stay in charge of who’s on the team.
+              </p>
+            </Reveal>
           </div>
-
-          <div className="flex flex-wrap justify-center gap-4 mb-12">
-            {categories.map((category) => (
-              <button
-                key={category.id}
-                onClick={() => setActiveCategory(category.id)}
-                className={`inline-flex items-center px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${activeCategory === category.id
-                  ? 'bg-primary-600 text-white shadow-lg transform scale-105'
-                  : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50 hover:border-gray-400'
-                  }`}
-              >
-                <category.icon className="h-5 w-5 mr-2" />
-                {category.name}
-              </button>
-            ))}
-          </div>
-
-          {/* Features Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredFeatures.map((feature) => (
-              <div
-                key={feature.id}
-                className={`${feature.color} border rounded-lg p-6 hover:shadow-xl transition-all duration-200 cursor-pointer group`}
-                onClick={() => setSelectedFeature(feature)}
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className={`p-3 rounded-full bg-white shadow-sm group-hover:scale-110 transition-transform duration-200`}>
-                    <feature.icon className={`h-8 w-8 ${feature.iconColor}`} />
-                  </div>
-                  <ArrowRight className={`h-5 w-5 ${feature.iconColor} opacity-0 group-hover:opacity-100 transition-opacity duration-200`} />
-                </div>
-
-                <h3 className={`text-xl font-heading font-semibold mb-3 ${feature.iconColor.replace('text-', 'text-').replace('-600', '-900')}`}>
-                  {feature.title}
-                </h3>
-
-                <p className={`text-sm mb-4 ${feature.iconColor.replace('text-', 'text-').replace('-600', '-700')}`}>
-                  {feature.description}
-                </p>
-
-                <div className="space-y-2">
-                  {feature.features.slice(0, 3).map((item, index) => (
-                    <div key={index} className="flex items-start space-x-2">
-                      <CheckCircle className={`h-4 w-4 ${feature.iconColor} mt-0.5 flex-shrink-0`} />
-                      <span className={`text-xs ${feature.iconColor.replace('text-', 'text-').replace('-600', '-700')}`}>
-                        {item}
-                      </span>
-                    </div>
+          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {ROLES.map((r, i) => (
+              <Reveal key={r.role} delay={i * 70} className="surface p-6">
+                <span className={`chip ${r.tone}`}>{r.role}</span>
+                <ul className="mt-5 space-y-3">
+                  {r.can.map((c) => (
+                    <li key={c} className="flex items-start gap-2.5 text-[15px] leading-snug text-ink/75">
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-ink/40" aria-hidden="true" />
+                      {c}
+                    </li>
                   ))}
-                  {feature.features.length > 3 && (
-                    <div className={`text-xs ${feature.iconColor} font-medium`}>
-                      +{feature.features.length - 3} more features
-                    </div>
-                  )}
-                </div>
-              </div>
+                </ul>
+              </Reveal>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Quick Features */}
-      <section className="py-16 bg-secondary-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl lg:text-4xl font-heading font-bold text-secondary-900 mb-4">
-              Additional Capabilities
-            </h2>
-            <p className="text-xl text-secondary-600">
-              More features that make your workflow smoother and more efficient
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
-            {quickFeatures.map((feature, index) => (
-              <div
-                key={index}
-                className="bg-white rounded-lg p-4 text-center hover:shadow-lg transition-shadow duration-200 group"
-              >
-                <div className="bg-primary-50 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-primary-100 transition-colors duration-200">
-                  <feature.icon className="h-6 w-6 text-primary-600" />
+      {/* Notifications */}
+      <div className="container-site">
+        <section id="notifications" className="scroll-mt-32 py-20 lg:py-28" aria-labelledby="notifications-title">
+          <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-20">
+            <Reveal className="min-w-0">
+              <span className="chip bg-white text-ink/70 shadow-soft">
+                <BellRing className="h-3.5 w-3.5" aria-hidden="true" /> Email notifications
+              </span>
+              <h2 id="notifications-title" className="type-h3 mt-5 max-w-[18ch]">
+                The right email at the moment it matters
+              </h2>
+              <p className="mt-4 max-w-[540px] text-[17px] leading-relaxed text-ink/60">
+                Shiftswaper sends clear, branded emails when someone needs to know: a new offer on your request, your offer being accepted, and the supervisor’s final decision — plus one-time codes for sign-up and password resets.
+              </p>
+            </Reveal>
+            <Reveal delay={100} className="min-w-0">
+              <div className="relative flex min-h-[380px] items-center justify-center overflow-hidden rounded-[32px] bg-butter-200 p-8" aria-hidden="true">
+                <span className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/40 blur-2xl" />
+                <div className="relative w-full max-w-[360px] space-y-3">
+                  <EmailMock title="New offer on your request" tone="brand" />
+                  <div className="sm:translate-x-8">
+                    <EmailMock title="Your offer was accepted" tone="brand" />
+                  </div>
+                  <EmailMock title="Your swap request was approved" />
+                  <div className="sm:translate-x-8">
+                    <EmailMock title="Your verification code" tone="brand" />
+                  </div>
                 </div>
-                <h3 className="font-semibold text-sm text-gray-900 mb-1">{feature.name}</h3>
-                <p className="text-xs text-gray-600">{feature.description}</p>
               </div>
+            </Reveal>
+          </div>
+        </section>
+      </div>
+
+      {/* Security */}
+      <section id="security" className="scroll-mt-32 pb-24 lg:pb-32" aria-labelledby="security-title">
+        <div className="container-site">
+          <Reveal>
+            <span className="chip bg-white text-ink/70 shadow-soft">
+              <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" /> Security
+            </span>
+            <h2 id="security-title" className="type-h3 mt-5 max-w-[20ch]">
+              Sensible protection, built in from the start
+            </h2>
+          </Reveal>
+          <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {SECURITY.map((s, i) => (
+              <Reveal key={s.title} delay={i * 70} className="card-sand flex flex-col p-7">
+                <span className="icon-tile">
+                  <s.icon className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <h3 className="mt-10 font-display text-[24px] leading-tight text-ink">{s.title}</h3>
+                <p className="mt-2 text-[15px] leading-relaxed text-ink/55">{s.body}</p>
+              </Reveal>
             ))}
           </div>
+          <Reveal className="mt-12">
+            <Link to="/how_it_works" className="link-arrow text-[16px]">
+              See the full workflow <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </Reveal>
         </div>
       </section>
 
-      {/* Feature Comparison */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl lg:text-4xl font-heading font-bold text-secondary-900 mb-4">
-              Why Choose Shiftswaper?
-            </h2>
-            <p className="text-xl text-secondary-600">
-              See how we compare to traditional scheduling methods
-            </p>
-          </div>
-
-          <div className="bg-gray-50 rounded-lg overflow-hidden">
-            <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-200">
-              {/* Traditional Method */}
-              <div className="p-8 text-center">
-                <div className="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <XCircle className="h-8 w-8 text-red-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">Traditional Methods</h3>
-                <ul className="space-y-3 text-sm text-gray-600">
-                  <li className="flex items-center space-x-2">
-                    <XCircle className="h-4 w-4 text-red-500" />
-                    <span>Manual phone calls and emails</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <XCircle className="h-4 w-4 text-red-500" />
-                    <span>Paper-based tracking systems</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <XCircle className="h-4 w-4 text-red-500" />
-                    <span>No central coordination</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <XCircle className="h-4 w-4 text-red-500" />
-                    <span>Time-consuming approvals</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <XCircle className="h-4 w-4 text-red-500" />
-                    <span>Limited visibility and reporting</span>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Basic Software */}
-              <div className="p-8 text-center">
-                <div className="bg-yellow-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <AlertCircle className="h-8 w-8 text-yellow-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">Basic Scheduling Software</h3>
-                <ul className="space-y-3 text-sm text-gray-600">
-                  <li className="flex items-center space-x-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span>Digital schedule management</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <XCircle className="h-4 w-4 text-red-500" />
-                    <span>Limited swap functionality</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <XCircle className="h-4 w-4 text-red-500" />
-                    <span>No automated approvals</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <XCircle className="h-4 w-4 text-red-500" />
-                    <span>Poor mobile experience</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <AlertCircle className="h-4 w-4 text-yellow-500" />
-                    <span>Basic reporting capabilities</span>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Shiftswaper */}
-              <div className="p-8 text-center bg-primary-50">
-                <div className="bg-primary-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Star className="h-8 w-8 text-white" />
-                </div>
-                <h3 className="text-xl font-semibold text-primary-900 mb-4">Shiftswaper</h3>
-                <ul className="space-y-3 text-sm text-primary-700">
-                  <li className="flex items-center space-x-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span>Intelligent swap matching</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span>Multi-level approval workflows</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span>Real-time notifications</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span>Mobile-first responsive design</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span>Advanced analytics & reporting</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Integration & API */}
-      <section className="py-16 bg-secondary-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl lg:text-4xl font-heading font-bold text-secondary-900 mb-4">
-              Integration & Extensibility
-            </h2>
-            <p className="text-xl text-secondary-600">
-              Connect Shiftswaper with your existing systems and workflows
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="bg-white rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow duration-200">
-              <div className="bg-blue-100 w-12 h-12 rounded-full flex items-center justify-center mb-4">
-                <Globe className="h-6 w-6 text-blue-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">REST API</h3>
-              <p className="text-gray-600 text-sm mb-3">
-                Comprehensive API for custom integrations with your existing HR and payroll systems.
-              </p>
-              <ul className="text-xs text-gray-500 space-y-1">
-                <li>• Full CRUD operations for all data</li>
-                <li>• Webhook support for real-time updates</li>
-                <li>• Rate limiting and authentication</li>
-                <li>• Comprehensive documentation</li>
-              </ul>
-            </div>
-
-            <div className="bg-white rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow duration-200">
-              <div className="bg-green-100 w-12 h-12 rounded-full flex items-center justify-center mb-4">
-                <Database className="h-6 w-6 text-green-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Data Import/Export</h3>
-              <p className="text-gray-600 text-sm mb-3">
-                Seamlessly migrate from existing systems or export data for analysis.
-              </p>
-              <ul className="text-xs text-gray-500 space-y-1">
-                <li>• Excel/CSV bulk import capabilities</li>
-                <li>• Automated data validation</li>
-                <li>• Custom export formats</li>
-                <li>• Scheduled backup exports</li>
-              </ul>
-            </div>
-
-            <div className="bg-white rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow duration-200">
-              <div className="bg-purple-100 w-12 h-12 rounded-full flex items-center justify-center mb-4">
-                <Settings className="h-6 w-6 text-purple-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Custom Workflows</h3>
-              <p className="text-gray-600 text-sm mb-3">
-                Configure approval processes and business rules to match your organization.
-              </p>
-              <ul className="text-xs text-gray-500 space-y-1">
-                <li>• Flexible approval hierarchies</li>
-                <li>• Custom notification templates</li>
-                <li>• Business rule configuration</li>
-                <li>• White-label branding options</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-primary-600 to-primary-700">
-        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl lg:text-4xl font-heading font-bold text-white mb-6">
-            Ready to Experience All Features?
-          </h2>
-          <p className="text-xl text-primary-100 mb-8 leading-relaxed">
-            Start your free trial today and discover how Shiftswaper can transform your
-            workforce scheduling with these powerful features.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-            <button className="bg-white text-primary-600 hover:bg-primary-50 px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 flex items-center justify-center group">
-              Start 30-Day Free Trial
-              <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
-            </button>
-            <button className="border-2 border-white text-white hover:bg-white hover:text-primary-600 px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 flex items-center justify-center group">
-              <Eye className="h-5 w-5 mr-2" />
-              Watch Demo Video
-            </button>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center text-primary-100 text-sm">
-            <div className="flex items-center">
-              <CheckCircle className="h-4 w-4 mr-2" />
-              <span>All features included</span>
-            </div>
-            <div className="flex items-center">
-              <CheckCircle className="h-4 w-4 mr-2" />
-              <span>No credit card required</span>
-            </div>
-            <div className="flex items-center">
-              <CheckCircle className="h-4 w-4 mr-2" />
-              <span>Setup assistance included</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Feature Detail Modal */}
-      {selectedFeature && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-10 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex justify-between items-center mb-6">
-                <div className="flex items-center space-x-3">
-                  <div className={`p-3 rounded-full ${selectedFeature.color.split(' ')[0]}`}>
-                    <selectedFeature.icon className={`h-8 w-8 ${selectedFeature.iconColor}`} />
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900">{selectedFeature.title}</h3>
-                </div>
-                <button
-                  onClick={() => setSelectedFeature(null)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <XCircle className="h-6 w-6" />
-                </button>
-              </div>
-
-              <div className="space-y-6">
-                <p className="text-lg text-gray-600">{selectedFeature.description}</p>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <div className={`${selectedFeature.color} border rounded-lg p-6`}>
-                    <h4 className={`text-lg font-semibold mb-4 ${selectedFeature.iconColor.replace('text-', 'text-').replace('-600', '-900')}`}>
-                      Key Features
-                    </h4>
-                    <div className="space-y-3">
-                      {selectedFeature.features.map((feature, index) => (
-                        <div key={index} className="flex items-start space-x-3">
-                          <CheckCircle className={`h-5 w-5 ${selectedFeature.iconColor} mt-0.5 flex-shrink-0`} />
-                          <span className={`text-sm ${selectedFeature.iconColor.replace('text-', 'text-').replace('-600', '-700')}`}>
-                            {feature}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
-                    <h4 className="text-lg font-semibold text-gray-900 mb-4">Business Benefits</h4>
-                    <div className="space-y-3">
-                      {selectedFeature.benefits.map((benefit, index) => (
-                        <div key={index} className="flex items-start space-x-3">
-                          <TrendingUp className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                          <span className="text-sm text-gray-700">{benefit}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-end space-x-3 pt-4 border-t">
-                  <button
-                    onClick={() => setSelectedFeature(null)}
-                    className="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors duration-200"
-                  >
-                    Close
-                  </button>
-                  <button className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200 flex items-center">
-                    Try This Feature
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ClosingCTA
+        title={
+          <>
+            Ready to retire the
+            <br />
+            swap group chat?
+          </>
+        }
+        lead="Create your company account, import your employee IDs and invite your team to join."
+      />
     </div>
   );
 };

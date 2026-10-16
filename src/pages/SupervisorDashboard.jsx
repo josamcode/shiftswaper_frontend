@@ -3,7 +3,6 @@ import Cookies from 'js-cookie';
 import {
   Shield,
   Clock,
-  Calendar,
   RefreshCw,
   Eye,
   Search,
@@ -14,17 +13,36 @@ import {
   X,
   Loader,
   AlertCircle,
-  ChevronDown,
   User,
   Bell,
   LogOut,
   Plus,
-  Edit,
-  Trash2,
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useAuth } from '../auth/AuthContext';
 import { useNavigate } from 'react-router-dom';
+
+// Shared presentation classes
+const TH = 'whitespace-nowrap px-5 py-3 text-left text-[12px] font-semibold uppercase tracking-[0.1em] text-ink/50';
+const TD = 'px-5 py-4 align-middle';
+const DT = 'text-[12px] font-semibold uppercase tracking-[0.1em] text-ink/45';
+const ICON_BTN = 'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-55';
+
+const getInitials = (name, fallback) => {
+  const parts = (name || '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return fallback;
+  return parts.slice(0, 2).map((part) => part[0].toUpperCase()).join('');
+};
+
+const EmptyState = ({ icon: Icon, title, text }) => (
+  <div className="px-6 py-14 text-center">
+    <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-sand-200 text-ink/60">
+      <Icon className="h-5 w-5" aria-hidden="true" />
+    </span>
+    <p className="mt-4 font-display text-xl text-ink">{title}</p>
+    {text && <p className="mx-auto mt-1 max-w-sm text-sm text-ink/55">{text}</p>}
+  </div>
+);
 
 const combineDateTime = (dateStr, timeStr) => {
   if (!dateStr || !timeStr) return null;
@@ -108,6 +126,19 @@ const SupervisorDashboard = () => {
   useEffect(() => {
     calculateStats(shiftRequests, dayOffRequests, ownShiftRequests, ownDayOffRequests);
   }, [shiftRequests, dayOffRequests, ownShiftRequests, ownDayOffRequests]);
+
+  // Close any open modal with Escape (same effect as its Cancel / close button)
+  useEffect(() => {
+    if (!showCreateModal && !showViewModal && !showActionModal) return undefined;
+    const onKeyDown = (e) => {
+      if (e.key !== 'Escape') return;
+      setShowCreateModal(false);
+      setShowViewModal(false);
+      setShowActionModal(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [showCreateModal, showViewModal, showActionModal]);
 
   const loadSupervisorData = () => {
     try {
@@ -299,7 +330,7 @@ const SupervisorDashboard = () => {
 
   const showSuccessMessage = (message) => {
     const successElement = document.createElement('div');
-    successElement.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+    successElement.className = 'fixed top-[86px] right-4 z-[70] max-w-[calc(100vw-2rem)] bg-ink text-white text-sm font-medium px-4 py-3 rounded-2xl shadow-float animate-slide-down';
     successElement.textContent = message;
     document.body.appendChild(successElement);
     setTimeout(() => {
@@ -494,8 +525,8 @@ const SupervisorDashboard = () => {
       text: "You will be logged out of your account",
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
+      confirmButtonColor: '#2998FF',
+      cancelButtonColor: '#A9A4B4',
       confirmButtonText: 'Yes, logout',
       cancelButtonText: 'Cancel'
     });
@@ -521,17 +552,17 @@ const SupervisorDashboard = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'offers_received': return 'bg-blue-100 text-blue-800';
-      case 'matched': return 'bg-blue-100 text-blue-800';
-      case 'approved': return 'bg-green-100 text-green-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'pending': return 'bg-butter-200 text-butter-700';
+      case 'offers_received': return 'bg-lavender-200 text-lavender-700';
+      case 'matched': return 'bg-lavender-200 text-lavender-700';
+      case 'approved': return 'bg-mint-200 text-mint-700';
+      case 'rejected': return 'bg-rose-200 text-rose-700';
+      default: return 'bg-sand-200 text-ink/70';
     }
   };
 
   const getTypeColor = (type) => {
-    return type === 'shift' ? 'bg-purple-100 text-purple-800' : 'bg-orange-100 text-orange-800';
+    return type === 'shift' ? 'bg-lavender-200 text-lavender-700' : 'bg-peach-200 text-peach-700';
   };
 
   const getPriorityColor = (request, type) => {
@@ -540,17 +571,17 @@ const SupervisorDashboard = () => {
       const now = new Date();
       const hoursUntilShift = (shiftDate - now) / (1000 * 60 * 60);
 
-      if (hoursUntilShift <= 24) return 'bg-red-100 text-red-800 border-red-200';
-      if (hoursUntilShift <= 48) return 'bg-orange-100 text-orange-800 border-orange-200';
-      return 'bg-green-100 text-green-800 border-green-200';
+      if (hoursUntilShift <= 24) return 'bg-rose-200 text-rose-700 border-rose-300';
+      if (hoursUntilShift <= 48) return 'bg-peach-200 text-peach-700 border-peach-300';
+      return 'bg-sand-200 text-ink/70 border-sand-400';
     } else {
       const requestedDate = new Date(request.requestedDayOff);
       const now = new Date();
       const daysUntilRequested = Math.ceil((requestedDate - now) / (1000 * 60 * 60 * 24));
 
-      if (daysUntilRequested <= 3) return 'bg-red-100 text-red-800 border-red-200';
-      if (daysUntilRequested <= 7) return 'bg-orange-100 text-orange-800 border-orange-200';
-      return 'bg-green-100 text-green-800 border-green-200';
+      if (daysUntilRequested <= 3) return 'bg-rose-200 text-rose-700 border-rose-300';
+      if (daysUntilRequested <= 7) return 'bg-peach-200 text-peach-700 border-peach-300';
+      return 'bg-sand-200 text-ink/70 border-sand-400';
     }
   };
 
@@ -600,137 +631,125 @@ const SupervisorDashboard = () => {
   const renderOverview = () => (
     <div className="space-y-6">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="bg-purple-100 p-3 rounded-full">
-              <Zap className="h-6 w-6 text-purple-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Employee Shift Requests</p>
-              <p className="text-2xl font-bold text-gray-900">{dashboardStats.totalShiftRequests}</p>
-            </div>
-          </div>
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <div className="stat-card">
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-lavender-200 text-lavender-700">
+            <Zap className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <p className="mt-4 font-display text-3xl leading-none text-ink">{dashboardStats.totalShiftRequests}</p>
+          <p className="mt-2 text-sm font-medium text-ink/55">Employee Shift Requests</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="bg-orange-100 p-3 rounded-full">
-              <CalendarDays className="h-6 w-6 text-orange-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Employee Day Off Requests</p>
-              <p className="text-2xl font-bold text-gray-900">{dashboardStats.totalDayOffRequests}</p>
-            </div>
-          </div>
+        <div className="stat-card">
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-peach-200 text-peach-700">
+            <CalendarDays className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <p className="mt-4 font-display text-3xl leading-none text-ink">{dashboardStats.totalDayOffRequests}</p>
+          <p className="mt-2 text-sm font-medium text-ink/55">Employee Day Off Requests</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="bg-blue-100 p-3 rounded-full">
-              <User className="h-6 w-6 text-blue-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">My Requests</p>
-              <p className="text-2xl font-bold text-gray-900">{dashboardStats.ownTotalRequests}</p>
-            </div>
-          </div>
+        <div className="stat-card">
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-100 text-brand-700">
+            <User className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <p className="mt-4 font-display text-3xl leading-none text-ink">{dashboardStats.ownTotalRequests}</p>
+          <p className="mt-2 text-sm font-medium text-ink/55">My Requests</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="bg-yellow-100 p-3 rounded-full">
-              <Clock className="h-6 w-6 text-yellow-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Pending Actions</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {dashboardStats.pendingShiftRequests + dashboardStats.pendingDayOffRequests}
-              </p>
-            </div>
-          </div>
+        <div className="stat-card">
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-butter-200 text-butter-700">
+            <Clock className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <p className="mt-4 font-display text-3xl leading-none text-ink">
+            {dashboardStats.pendingShiftRequests + dashboardStats.pendingDayOffRequests}
+          </p>
+          <p className="mt-2 text-sm font-medium text-ink/55">Pending Actions</p>
         </div>
       </div>
 
-      {/* My Recent Requests */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">My Recent Requests</h3>
-        </div>
-        <div className="p-6">
-          {[...ownShiftRequests.map(req => ({ ...req, type: 'shift' })), ...ownDayOffRequests.map(req => ({ ...req, type: 'dayoff' }))]
-            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-            .slice(0, 3)
-            .map((request) => (
-              <div key={request._id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
-                <div className="flex items-center space-x-3">
-                  <div className="bg-gray-100 rounded-full p-2">
-                    {request.type === 'shift' ? <Zap className="h-4 w-4 text-purple-600" /> : <CalendarDays className="h-4 w-4 text-orange-600" />}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{request.reason}</p>
-                    <p className="text-xs text-gray-500">{formatDate(request.createdAt)}</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(request.type)}`}>
-                    {request.type === 'shift' ? 'Shift' : 'Day Off'}
-                  </span>
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(request.status)}`}>
-                    {request.status === 'matched' ? 'offers_received' : request.status}
-                  </span>
-                </div>
-              </div>
-            ))}
-          {[...ownShiftRequests, ...ownDayOffRequests].length === 0 && (
-            <div className="text-center py-8">
-              <Shield className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No personal requests</h3>
-              <p className="mt-1 text-sm text-gray-500">Create your first request to get started.</p>
-            </div>
+      <div className="grid gap-6 xl:grid-cols-2">
+        {/* Requests Requiring Action */}
+        <section className="app-card overflow-hidden" aria-labelledby="supervisor-action-title">
+          <div className="border-b border-ink/[0.07] px-5 py-4 sm:px-6">
+            <h2 id="supervisor-action-title" className="font-display text-xl text-ink">Employee Requests Requiring Action</h2>
+          </div>
+          {[...filteredShiftRequests, ...filteredDayOffRequests].filter(req => canTakeAction(req)).length > 0 ? (
+            <ul className="divide-y divide-ink/[0.06]">
+              {[...filteredShiftRequests, ...filteredDayOffRequests]
+                .filter(req => canTakeAction(req))
+                .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+                .slice(0, 5)
+                .map((request) => (
+                  <li key={request._id} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${request.type === 'shift' ? 'bg-lavender-200 text-lavender-700' : 'bg-peach-200 text-peach-700'}`}>
+                        {request.type === 'shift' ? <Zap className="h-4 w-4" aria-hidden="true" /> : <CalendarDays className="h-4 w-4" aria-hidden="true" />}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-ink">{request.reason}</p>
+                        <p className="truncate text-xs text-ink/50">
+                          From: {request.requesterUserId?.fullName}
+                          {request.receiverUserId && ` & ${request.receiverUserId?.fullName}`}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 flex-wrap items-center gap-2 pl-[52px] sm:pl-0">
+                      <span className={`chip border ${getPriorityColor(request, request.type || (request.shiftStartDate ? 'shift' : 'dayoff'))}`}>
+                        {getPriorityText(request, request.type || (request.shiftStartDate ? 'shift' : 'dayoff'))}
+                      </span>
+                      <span className={`chip capitalize ${getStatusColor(request.status)}`}>
+                        {request.status.replace('_', ' ')}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+            </ul>
+          ) : (
+            <EmptyState
+              icon={CheckCircle}
+              title="No pending requests"
+              text="All employee requests have been processed."
+            />
           )}
-        </div>
-      </div>
+        </section>
 
-      {/* Requests Requiring Action */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">Employee Requests Requiring Action</h3>
-        </div>
-        <div className="p-6">
-          {[...filteredShiftRequests, ...filteredDayOffRequests]
-            .filter(req => canTakeAction(req))
-            .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
-            .slice(0, 5)
-            .map((request) => (
-              <div key={request._id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
-                <div className="flex items-center space-x-3">
-                  <div className="bg-gray-100 rounded-full p-2">
-                    {request.type === 'shift' ? <Zap className="h-4 w-4 text-purple-600" /> : <CalendarDays className="h-4 w-4 text-orange-600" />}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{request.reason}</p>
-                    <p className="text-xs text-gray-500">
-                      From: {request.requesterUserId?.fullName}
-                      {request.receiverUserId && ` & ${request.receiverUserId?.fullName}`}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getPriorityColor(request, request.type || (request.shiftStartDate ? 'shift' : 'dayoff'))}`}>
-                    {getPriorityText(request, request.type || (request.shiftStartDate ? 'shift' : 'dayoff'))}
-                  </span>
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(request.status)}`}>
-                    {request.status.replace('_', ' ').toUpperCase()}
-                  </span>
-                </div>
-              </div>
-            ))}
-          {[...filteredShiftRequests, ...filteredDayOffRequests].filter(req => canTakeAction(req)).length === 0 && (
-            <div className="text-center py-8">
-              <CheckCircle className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No pending requests</h3>
-              <p className="mt-1 text-sm text-gray-500">All employee requests have been processed.</p>
-            </div>
+        {/* My Recent Requests */}
+        <section className="app-card overflow-hidden" aria-labelledby="supervisor-mine-title">
+          <div className="border-b border-ink/[0.07] px-5 py-4 sm:px-6">
+            <h2 id="supervisor-mine-title" className="font-display text-xl text-ink">My Recent Requests</h2>
+          </div>
+          {[...ownShiftRequests, ...ownDayOffRequests].length > 0 ? (
+            <ul className="divide-y divide-ink/[0.06]">
+              {[...ownShiftRequests.map(req => ({ ...req, type: 'shift' })), ...ownDayOffRequests.map(req => ({ ...req, type: 'dayoff' }))]
+                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                .slice(0, 3)
+                .map((request) => (
+                  <li key={request._id} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${request.type === 'shift' ? 'bg-lavender-200 text-lavender-700' : 'bg-peach-200 text-peach-700'}`}>
+                        {request.type === 'shift' ? <Zap className="h-4 w-4" aria-hidden="true" /> : <CalendarDays className="h-4 w-4" aria-hidden="true" />}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-ink">{request.reason}</p>
+                        <p className="text-xs text-ink/50">{formatDate(request.createdAt)}</p>
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 flex-wrap items-center gap-2 pl-[52px] sm:pl-0">
+                      <span className={`chip ${getTypeColor(request.type)}`}>
+                        {request.type === 'shift' ? 'Shift' : 'Day Off'}
+                      </span>
+                      <span className={`chip capitalize ${getStatusColor(request.status)}`}>
+                        {(request.status === 'matched' ? 'offers_received' : request.status).replace('_', ' ')}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+            </ul>
+          ) : (
+            <EmptyState
+              icon={Shield}
+              title="No personal requests"
+              text="Create your first request to get started."
+            />
           )}
-        </div>
+        </section>
       </div>
     </div>
   );
@@ -739,67 +758,57 @@ const SupervisorDashboard = () => {
   const renderMyRequests = () => (
     <div className="space-y-6">
       {/* Header with Create Button */}
-      <div className="bg-white rounded-lg shadow p-4">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
-          <div>
-            <h3 className="text-lg font-medium text-gray-900">My Requests</h3>
-            <p className="text-sm text-gray-600">Manage your own shift and day off swap requests</p>
-          </div>
-          <div className="flex space-x-2">
-            <button
-              onClick={loadOwnRequests}
-              className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </button>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              New Request
-            </button>
-          </div>
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h2 className="font-display text-2xl text-ink">My Requests</h2>
+          <p className="mt-1 text-sm text-ink/55">Manage your own shift and day off swap requests</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={loadOwnRequests}
+            className="btn btn-white btn-md"
+          >
+            <RefreshCw className="h-4 w-4" aria-hidden="true" />
+            Refresh
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowCreateModal(true)}
+            className="btn btn-primary btn-md"
+          >
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            New Request
+          </button>
         </div>
       </div>
 
       {/* My Requests Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="app-card overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full text-left">
+            <thead className="bg-sand-100">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Request Details
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Type
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Created
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
+                <th scope="col" className={TH}>Request Details</th>
+                <th scope="col" className={TH}>Type</th>
+                <th scope="col" className={TH}>Status</th>
+                <th scope="col" className={TH}>Created</th>
+                <th scope="col" className={`${TH} text-right`}>Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-ink/[0.06]">
               {[...ownShiftRequests.map(req => ({ ...req, type: 'shift' })), ...ownDayOffRequests.map(req => ({ ...req, type: 'dayoff' }))]
                 .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
                 .map((request) => (
-                  <tr key={request._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="bg-gray-100 rounded-full p-2 mr-3">
-                          {request.type === 'shift' ? <Zap className="h-4 w-4 text-purple-600" /> : <CalendarDays className="h-4 w-4 text-orange-600" />}
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">{request.reason}</div>
-                          <div className="text-sm text-gray-500">
+                  <tr key={request._id} className="transition-colors hover:bg-sand-50">
+                    <td className={TD}>
+                      <div className="flex items-center gap-3">
+                        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${request.type === 'shift' ? 'bg-lavender-200 text-lavender-700' : 'bg-peach-200 text-peach-700'}`}>
+                          {request.type === 'shift' ? <Zap className="h-4 w-4" aria-hidden="true" /> : <CalendarDays className="h-4 w-4" aria-hidden="true" />}
+                        </span>
+                        <div className="min-w-0">
+                          <div className="max-w-[280px] truncate text-sm font-medium text-ink" title={request.reason}>{request.reason}</div>
+                          <div className="whitespace-nowrap text-[13px] text-ink/60">
                             {request.type === 'shift'
                               ? `${formatDate(request.shiftStartDate)} - ${formatDate(request.shiftEndDate)}`
                               : `${formatDateOnly(request.originalDayOff)} → ${formatDateOnly(request.requestedDayOff)}`
@@ -808,27 +817,29 @@ const SupervisorDashboard = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(request.type)}`}>
+                    <td className={TD}>
+                      <span className={`chip whitespace-nowrap ${getTypeColor(request.type)}`}>
                         {request.type === 'shift' ? 'Shift Swap' : 'Day Off Swap'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(request.status)}`}>
-                        {request.status === 'matched' ? 'OFFERS RECEIVED' : request.status.replace('_', ' ').toUpperCase()}
+                    <td className={TD}>
+                      <span className={`chip whitespace-nowrap capitalize ${getStatusColor(request.status)}`}>
+                        {request.status === 'matched' ? 'offers received' : request.status.replace('_', ' ')}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className={`${TD} whitespace-nowrap text-sm text-ink/55`}>
                       {formatDate(request.createdAt)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center space-x-1">
+                    <td className={TD}>
+                      <div className="flex items-center justify-end gap-2">
                         <button
+                          type="button"
                           onClick={() => viewRequestDetails(request, request.type)}
-                          className="inline-flex items-center px-2 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-700 transition-colors duration-200"
+                          className={`${ICON_BTN} border border-ink/10 bg-white text-ink hover:bg-sand-100`}
                           title="View Details"
+                          aria-label="View details"
                         >
-                          <Eye className="h-3 w-3" />
+                          <Eye className="h-4 w-4" aria-hidden="true" />
                         </button>
                       </div>
                     </td>
@@ -838,11 +849,11 @@ const SupervisorDashboard = () => {
           </table>
         </div>
         {[...ownShiftRequests, ...ownDayOffRequests].length === 0 && !isLoading && (
-          <div className="text-center py-8">
-            <Shield className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No requests found</h3>
-            <p className="mt-1 text-sm text-gray-500">Create your first request to get started.</p>
-          </div>
+          <EmptyState
+            icon={Shield}
+            title="No requests found"
+            text="Create your first request to get started."
+          />
         )}
       </div>
     </div>
@@ -852,25 +863,27 @@ const SupervisorDashboard = () => {
   const renderEmployeeRequests = () => (
     <div className="space-y-6">
       {/* Filters and Controls */}
-      <div className="bg-white rounded-lg shadow p-4">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
-          <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
+      <div className="app-card p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
             {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <div className="relative sm:w-72">
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/40" aria-hidden="true" />
               <input
                 type="text"
                 placeholder="Search by reason or employee..."
+                aria-label="Search by reason or employee"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="field h-11 py-0 pl-10"
               />
             </div>
             {/* Status Filter */}
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              aria-label="Filter by status"
+              className="field h-11 py-0 sm:w-44"
             >
               <option value="pending">Pending Only</option>
               <option value="all">All Status</option>
@@ -881,7 +894,8 @@ const SupervisorDashboard = () => {
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              aria-label="Filter by type"
+              className="field h-11 py-0 sm:w-44"
             >
               <option value="all">All Types</option>
               <option value="shift">Shift Swaps</option>
@@ -889,114 +903,109 @@ const SupervisorDashboard = () => {
             </select>
           </div>
           <button
+            type="button"
             onClick={() => {
               loadShiftRequests();
               loadDayOffRequests();
             }}
-            className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200"
+            className="btn btn-white btn-md self-start lg:self-auto"
           >
-            <RefreshCw className="h-4 w-4 mr-2" />
+            <RefreshCw className="h-4 w-4" aria-hidden="true" />
             Refresh
           </button>
         </div>
       </div>
 
       {/* Employee Requests Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="app-card overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full text-left">
+            <thead className="bg-sand-100">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Request Details
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Type
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Priority
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Created
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
+                <th scope="col" className={TH}>Request Details</th>
+                <th scope="col" className={TH}>Type</th>
+                <th scope="col" className={TH}>Priority</th>
+                <th scope="col" className={TH}>Status</th>
+                <th scope="col" className={TH}>Created</th>
+                <th scope="col" className={`${TH} text-right`}>Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-ink/[0.06]">
               {[...filteredShiftRequests.map(req => ({ ...req, type: 'shift' })), ...filteredDayOffRequests.map(req => ({ ...req, type: 'dayoff' }))]
                 .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
                 .map((request) => (
-                  <tr key={request._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="bg-gray-100 rounded-full p-2 mr-3">
-                          {request.type === 'shift' ? <Zap className="h-4 w-4 text-purple-600" /> : <CalendarDays className="h-4 w-4 text-orange-600" />}
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">{request.reason}</div>
-                          <div className="text-sm text-gray-500">
+                  <tr key={request._id} className="transition-colors hover:bg-sand-50">
+                    <td className={TD}>
+                      <div className="flex items-center gap-3">
+                        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${request.type === 'shift' ? 'bg-lavender-200 text-lavender-700' : 'bg-peach-200 text-peach-700'}`}>
+                          {request.type === 'shift' ? <Zap className="h-4 w-4" aria-hidden="true" /> : <CalendarDays className="h-4 w-4" aria-hidden="true" />}
+                        </span>
+                        <div className="min-w-0">
+                          <div className="max-w-[280px] truncate text-sm font-medium text-ink" title={request.reason}>{request.reason}</div>
+                          <div className="whitespace-nowrap text-[13px] text-ink/60">
                             {request.type === 'shift'
                               ? `${formatDate(request.shiftStartDate)} - ${formatDate(request.shiftEndDate)}`
                               : `${formatDateOnly(request.originalDayOff)} → ${formatDateOnly(request.requestedDayOff)}`
                             }
                           </div>
-                          <div className="text-xs text-gray-400">
+                          <div className="whitespace-nowrap text-xs text-ink/45">
                             From: {request.requesterUserId?.fullName}
                             {request.receiverUserId && ` & ${request.receiverUserId?.fullName}`}
                           </div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(request.type)}`}>
+                    <td className={TD}>
+                      <span className={`chip whitespace-nowrap ${getTypeColor(request.type)}`}>
                         {request.type === 'shift' ? 'Shift Swap' : 'Day Off Swap'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getPriorityColor(request, request.type)}`}>
+                    <td className={TD}>
+                      <span className={`chip border ${getPriorityColor(request, request.type)}`}>
                         {getPriorityText(request, request.type)}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(request.status)}`}>
-                        {request.status.replace('_', ' ').toUpperCase()}
+                    <td className={TD}>
+                      <span className={`chip whitespace-nowrap capitalize ${getStatusColor(request.status)}`}>
+                        {request.status.replace('_', ' ')}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className={`${TD} whitespace-nowrap text-sm text-ink/55`}>
                       {formatDate(request.createdAt)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center space-x-1">
+                    <td className={TD}>
+                      <div className="flex items-center justify-end gap-2">
                         <button
+                          type="button"
                           onClick={() => viewRequestDetails(request, request.type)}
-                          className="inline-flex items-center px-2 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-700 transition-colors duration-200"
+                          className={`${ICON_BTN} border border-ink/10 bg-white text-ink hover:bg-sand-100`}
                           title="View Details"
+                          aria-label="View details"
                         >
-                          <Eye className="h-3 w-3" />
+                          <Eye className="h-4 w-4" aria-hidden="true" />
                         </button>
 
                         {canTakeAction(request) && (
                           <>
                             <button
+                              type="button"
                               onClick={() => openActionModal(request, request.type, 'approve')}
                               disabled={actionLoading === request._id}
-                              className="inline-flex items-center px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors duration-200 disabled:opacity-50"
+                              className={`${ICON_BTN} bg-mint-200 text-mint-700 hover:bg-mint-300`}
                               title="Approve Request"
+                              aria-label="Approve request"
                             >
-                              {actionLoading === request._id ? <Loader className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3" />}
+                              {actionLoading === request._id ? <Loader className="h-4 w-4 animate-spin" aria-hidden="true" /> : <CheckCircle className="h-4 w-4" aria-hidden="true" />}
                             </button>
                             <button
+                              type="button"
                               onClick={() => openActionModal(request, request.type, 'reject')}
                               disabled={actionLoading === request._id}
-                              className="inline-flex items-center px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors duration-200 disabled:opacity-50"
+                              className={`${ICON_BTN} bg-rose-200 text-rose-700 hover:bg-rose-300`}
                               title="Reject Request"
+                              aria-label="Reject request"
                             >
-                              {actionLoading === request._id ? <Loader className="h-3 w-3 animate-spin" /> : <XCircle className="h-3 w-3" />}
+                              {actionLoading === request._id ? <Loader className="h-4 w-4 animate-spin" aria-hidden="true" /> : <XCircle className="h-4 w-4" aria-hidden="true" />}
                             </button>
                           </>
                         )}
@@ -1008,16 +1017,14 @@ const SupervisorDashboard = () => {
           </table>
         </div>
         {[...filteredShiftRequests, ...filteredDayOffRequests].length === 0 && !isLoading && (
-          <div className="text-center py-8">
-            <Shield className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No requests found</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              {[...shiftRequests, ...dayOffRequests].length === 0
-                ? 'No employee swap requests require your attention.'
-                : 'Try adjusting your search or filters.'
-              }
-            </p>
-          </div>
+          <EmptyState
+            icon={Shield}
+            title="No requests found"
+            text={[...shiftRequests, ...dayOffRequests].length === 0
+              ? 'No employee swap requests require your attention.'
+              : 'Try adjusting your search or filters.'
+            }
+          />
         )}
       </div>
     </div>
@@ -1025,160 +1032,169 @@ const SupervisorDashboard = () => {
 
   if (isLoading && shiftRequests.length === 0 && dayOffRequests.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader className="mx-auto h-8 w-8 text-blue-600 animate-spin" />
-          <p className="mt-2 text-gray-600">Loading supervisor dashboard...</p>
+      <div className="app-page flex items-center justify-center px-5">
+        <div className="text-center" role="status" aria-live="polite">
+          <div
+            className="mx-auto h-10 w-10 animate-spin rounded-full border-[3px] border-brand-100 border-t-brand-500"
+            aria-hidden="true"
+          />
+          <p className="mt-4 text-sm text-ink/55">Loading supervisor dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="pt-2 bg-gradient-to-b from-primary-50 to-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row gap-8 sm:gap-0 sm:justify-between sm:items-center py-6">
-            <div className="flex items-center">
-              <Shield className="h-8 w-8 text-blue-600 mr-3" />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+    <div className="app-page">
+      {/* Page hero: identity + account actions */}
+      <section className="app-hero">
+        <div className="container-site py-6 sm:py-8">
+          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+            <div className="flex min-w-0 items-center gap-4">
+              <span
+                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-brand-100 font-display text-xl text-brand-700"
+                aria-hidden="true"
+              >
+                {getInitials(supervisorData?.fullName, 'S')}
+              </span>
+              <div className="min-w-0">
+                <span className="chip bg-sand-200 text-ink/70">
+                  <Shield className="h-3.5 w-3.5" aria-hidden="true" />
+                  Supervisor
+                </span>
+                <h1 className="app-title mt-1.5 break-words">
                   Welcome, {supervisorData?.fullName || 'Supervisor'}
                 </h1>
-                <p className="text-sm text-gray-500">{supervisorData?.email || 'Supervisor'}</p>
-                <p className="text-sm text-gray-500">{supervisorData?.companyName || 'Company'}</p>
+                <p className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-ink/55">
+                  <span className="break-all">{supervisorData?.email || 'Supervisor'}</span>
+                  <span aria-hidden="true">·</span>
+                  <span>{supervisorData?.companyName || 'Company'}</span>
+                </p>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <Bell className="h-6 w-6 text-gray-600 hover:text-gray-900 cursor-pointer" />
-                {(dashboardStats.pendingShiftRequests + dashboardStats.pendingDayOffRequests) > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                    {dashboardStats.pendingShiftRequests + dashboardStats.pendingDayOffRequests}
-                  </span>
-                )}
-              </div>
-              <div className="relative group">
-                <button className="flex items-center space-x-2 text-gray-700 hover:text-gray-900">
-                  <div className="bg-blue-100 rounded-full p-2">
-                    <Shield className="h-4 w-4 text-blue-600" />
-                  </div>
-                  <span className="text-sm font-medium">{supervisorData?.fullName}</span>
-                  <ChevronDown className="h-4 w-4" />
-                </button>
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                  >
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Logout
-                  </button>
-                </div>
-              </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {(dashboardStats.pendingShiftRequests + dashboardStats.pendingDayOffRequests) > 0 ? (
+                <span className="chip h-9 bg-butter-200 px-3 text-butter-700">
+                  <Bell className="h-3.5 w-3.5" aria-hidden="true" />
+                  {dashboardStats.pendingShiftRequests + dashboardStats.pendingDayOffRequests} pending
+                  <span className="sr-only"> employee requests</span>
+                </span>
+              ) : (
+                <span className="chip h-9 bg-sand-200 px-3 text-ink/60">
+                  <Bell className="h-3.5 w-3.5" aria-hidden="true" />
+                  No pending requests
+                </span>
+              )}
+              <button type="button" onClick={handleLogout} className="btn btn-white btn-md">
+                <LogOut className="h-4 w-4" aria-hidden="true" />
+                Log out
+              </button>
             </div>
           </div>
         </div>
-      </header>
+      </section>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="container-site py-8">
         {/* Error Message */}
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="flex items-center">
-              <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-              <p className="text-red-600">{error}</p>
-              <button
-                onClick={() => setError('')}
-                className="ml-auto text-red-500 hover:text-red-700"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
+          <div className="alert alert-error mb-6" role="alert">
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
+            <p className="flex-1">{error}</p>
+            <button
+              type="button"
+              onClick={() => setError('')}
+              aria-label="Dismiss error"
+              className="-m-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full hover:bg-rose-200"
+            >
+              <X className="h-4 w-4" aria-hidden="true" />
+            </button>
           </div>
         )}
 
         {/* Tabs */}
-        <div className="mb-6">
-          <nav className="flex space-x-8">
-            <button
-              onClick={() => setActiveTab('overview')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'overview'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-            >
-              Overview
-            </button>
-            <button
-              onClick={() => setActiveTab('my-requests')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'my-requests'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-            >
-              My Requests
-              {dashboardStats.ownPendingRequests > 0 && (
-                <span className="ml-2 bg-blue-100 text-blue-600 py-0.5 px-2 rounded-full text-xs">
-                  {dashboardStats.ownPendingRequests}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('employee-requests')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'employee-requests'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-            >
-              Employee Requests
-              {(dashboardStats.pendingShiftRequests + dashboardStats.pendingDayOffRequests) > 0 && (
-                <span className="ml-2 bg-red-100 text-red-600 py-0.5 px-2 rounded-full text-xs">
-                  {dashboardStats.pendingShiftRequests + dashboardStats.pendingDayOffRequests}
-                </span>
-              )}
-            </button>
-          </nav>
+        <div
+          role="tablist"
+          aria-label="Dashboard sections"
+          className="app-tabs mb-6 w-fit max-w-full rounded-full border border-ink/[0.07] bg-white p-1 shadow-soft"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'overview'}
+            onClick={() => setActiveTab('overview')}
+            className="app-tab"
+          >
+            Overview
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'my-requests'}
+            onClick={() => setActiveTab('my-requests')}
+            className="app-tab"
+          >
+            My Requests
+            {dashboardStats.ownPendingRequests > 0 && (
+              <span className={`chip px-2 py-0.5 ${activeTab === 'my-requests' ? 'bg-white/20 text-white' : 'bg-brand-100 text-brand-700'}`}>
+                {dashboardStats.ownPendingRequests}
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'employee-requests'}
+            onClick={() => setActiveTab('employee-requests')}
+            className="app-tab"
+          >
+            Employee Requests
+            {(dashboardStats.pendingShiftRequests + dashboardStats.pendingDayOffRequests) > 0 && (
+              <span className={`chip px-2 py-0.5 ${activeTab === 'employee-requests' ? 'bg-white/20 text-white' : 'bg-butter-200 text-butter-700'}`}>
+                {dashboardStats.pendingShiftRequests + dashboardStats.pendingDayOffRequests}
+              </span>
+            )}
+          </button>
         </div>
 
         {/* Tab Content */}
         {activeTab === 'overview' && renderOverview()}
         {activeTab === 'my-requests' && renderMyRequests()}
         {activeTab === 'employee-requests' && renderEmployeeRequests()}
-      </main>
+      </div>
 
       {/* Create Request Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-medium text-gray-900">Create New Request</h3>
-                <button
-                  onClick={() => setShowCreateModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
+        <div className="modal-backdrop">
+          <div className="modal-panel max-w-2xl" role="dialog" aria-modal="true" aria-labelledby="supervisor-create-title">
+            <div className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-ink/[0.07] bg-white px-6 py-5">
+              <h2 id="supervisor-create-title" className="font-display text-2xl text-ink">Create New Request</h2>
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(false)}
+                aria-label="Close"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink/55 transition-colors hover:bg-ink/5 hover:text-ink"
+              >
+                <X className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </div>
 
+            <div className="space-y-6 p-6">
               {/* Request Type Selection */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Request Type</label>
-                <div className="flex space-x-4">
-                  <label className="flex items-center">
+              <fieldset>
+                <legend className="field-label">Request Type</legend>
+                <div className="grid grid-cols-2 gap-2">
+                  <label className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium transition-colors duration-200 ${createType === 'shift' ? 'border-brand-500 bg-brand-50 text-ink' : 'border-ink/15 text-ink/70 hover:border-ink/25'}`}>
                     <input
                       type="radio"
                       value="shift"
                       checked={createType === 'shift'}
                       onChange={(e) => setCreateType(e.target.value)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                      className="h-4 w-4 shrink-0 accent-brand-500"
                     />
-                    <span className="ml-2 text-sm text-gray-900">Shift Swap</span>
+                    Shift Swap
                   </label>
-                  <label className="flex items-center">
+                  <label className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium transition-colors duration-200 ${createType === 'dayoff' ? 'border-brand-500 bg-brand-50 text-ink' : 'border-ink/15 text-ink/70 hover:border-ink/25'}`}>
                     <input
                       type="radio"
                       value="dayoff"
@@ -1196,163 +1212,170 @@ const SupervisorDashboard = () => {
                           });
                         }
                       }}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                      className="h-4 w-4 shrink-0 accent-brand-500"
                     />
-                    <span className="ml-2 text-sm text-gray-900">Day Off Swap</span>
+                    Day Off Swap
                   </label>
+                </div>
+              </fieldset>
+
+              {/* Reason */}
+              <div>
+                <label htmlFor="supervisor-reason" className="field-label">
+                  Reason *
+                </label>
+                <textarea
+                  id="supervisor-reason"
+                  value={formData.reason}
+                  onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+                  rows={3}
+                  className="field resize-none"
+                  placeholder="Explain why you need this swap..."
+                />
+              </div>
+
+              {/* Day Off Specific Fields */}
+              {createType === 'dayoff' && (
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="supervisor-original-day-off" className="field-label">
+                      Your Original Day Off *
+                    </label>
+                    <input
+                      id="supervisor-original-day-off"
+                      type="date"
+                      value={formData.originalDayOff}
+                      onChange={(e) => setFormData({ ...formData, originalDayOff: e.target.value })}
+                      className="field"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="supervisor-requested-day-off" className="field-label">
+                      Requested Day Off *
+                    </label>
+                    <input
+                      id="supervisor-requested-day-off"
+                      type="date"
+                      value={formData.requestedDayOff}
+                      onChange={(e) => setFormData({ ...formData, requestedDayOff: e.target.value })}
+                      className="field"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Shift Details (Required) */}
+              <div>
+                <h3 className="mb-3 text-[15px] font-semibold text-ink">Shift Details *</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="supervisor-shift-date" className="field-label">Shift Date *</label>
+                    <input
+                      id="supervisor-shift-date"
+                      type="date"
+                      value={formData.shiftDate || ''}
+                      onChange={(e) => setFormData({ ...formData, shiftDate: e.target.value })}
+                      className="field"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor="supervisor-shift-start" className="field-label">Start Time *</label>
+                      <input
+                        id="supervisor-shift-start"
+                        type="time"
+                        value={formData.shiftStartTime || ''}
+                        onChange={(e) => setFormData({ ...formData, shiftStartTime: e.target.value })}
+                        className="field"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="supervisor-shift-end" className="field-label">End Time *</label>
+                      <input
+                        id="supervisor-shift-end"
+                        type="time"
+                        value={formData.shiftEndTime || ''}
+                        onChange={(e) => setFormData({ ...formData, shiftEndTime: e.target.value })}
+                        className="field"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                {/* Reason */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Reason *
-                  </label>
-                  <textarea
-                    value={formData.reason}
-                    onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                    placeholder="Explain why you need this swap..."
-                  />
-                </div>
-
-                {/* Day Off Specific Fields */}
-                {createType === 'dayoff' && (
-                  <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Your Original Day Off *
-                        </label>
-                        <input
-                          type="date"
-                          value={formData.originalDayOff}
-                          onChange={(e) => setFormData({ ...formData, originalDayOff: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Requested Day Off *
-                        </label>
-                        <input
-                          type="date"
-                          value={formData.requestedDayOff}
-                          onChange={(e) => setFormData({ ...formData, requestedDayOff: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {/* Shift Details (Required) */}
-                <div>
-                  <h4 className="text-md font-medium text-gray-900 mb-3">Shift Details *</h4>
-                  <div className="space-y-4">
+              {/* Overtime Details */}
+              <div className="rounded-2xl bg-sand-100 p-4 sm:p-5">
+                <h3 className="mb-3 text-[15px] font-semibold text-ink">Do you have Overtime? (Optional)</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="supervisor-overtime-date" className="field-label">Overtime Date</label>
+                    <input
+                      id="supervisor-overtime-date"
+                      type="date"
+                      value={formData.overtimeDate || formData.shiftDate || ''}
+                      onChange={(e) => setFormData({ ...formData, overtimeDate: e.target.value })}
+                      className="field"
+                      placeholder="Same as shift date if left empty"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Shift Date *</label>
+                      <label htmlFor="supervisor-overtime-start" className="field-label">Start Time</label>
                       <input
-                        type="date"
-                        value={formData.shiftDate || ''}
-                        onChange={(e) => setFormData({ ...formData, shiftDate: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        id="supervisor-overtime-start"
+                        type="time"
+                        value={formData.overtimeStartTime || ''}
+                        onChange={(e) => setFormData({ ...formData, overtimeStartTime: e.target.value })}
+                        className="field"
                       />
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Start Time *</label>
-                        <input
-                          type="time"
-                          value={formData.shiftStartTime || ''}
-                          onChange={(e) => setFormData({ ...formData, shiftStartTime: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">End Time *</label>
-                        <input
-                          type="time"
-                          value={formData.shiftEndTime || ''}
-                          onChange={(e) => setFormData({ ...formData, shiftEndTime: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Overtime Details */}
-                <div>
-                  <h4 className="text-md font-medium text-gray-900 mb-3">Do you have Overtime? (Optional)</h4>
-                  <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Overtime Date</label>
+                      <label htmlFor="supervisor-overtime-end" className="field-label">End Time</label>
                       <input
-                        type="date"
-                        value={formData.overtimeDate || formData.shiftDate || ''}
-                        onChange={(e) => setFormData({ ...formData, overtimeDate: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Same as shift date if left empty"
+                        id="supervisor-overtime-end"
+                        type="time"
+                        value={formData.overtimeEndTime || ''}
+                        onChange={(e) => setFormData({ ...formData, overtimeEndTime: e.target.value })}
+                        className="field"
                       />
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Start Time</label>
-                        <input
-                          type="time"
-                          value={formData.overtimeStartTime || ''}
-                          onChange={(e) => setFormData({ ...formData, overtimeStartTime: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">End Time</label>
-                        <input
-                          type="time"
-                          value={formData.overtimeEndTime || ''}
-                          onChange={(e) => setFormData({ ...formData, overtimeEndTime: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </div>
-                    </div>
                   </div>
-                </div>
-
-                {error && (
-                  <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-                    <div className="flex items-center">
-                      <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-                      <p className="text-red-600">{error}</p>
-                      <button
-                        onClick={() => setError('')}
-                        className="ml-auto text-red-500 hover:text-red-700"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Action Buttons */}
-                <div className="flex justify-end space-x-3 pt-4 border-t">
-                  <button
-                    onClick={() => setShowCreateModal(false)}
-                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors duration-200"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleCreateRequest}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Request
-                  </button>
                 </div>
               </div>
+
+              {error && (
+                <div className="alert alert-error" role="alert">
+                  <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
+                  <p className="flex-1">{error}</p>
+                  <button
+                    type="button"
+                    onClick={() => setError('')}
+                    aria-label="Dismiss error"
+                    className="-m-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full hover:bg-rose-200"
+                  >
+                    <X className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col-reverse gap-2 border-t border-ink/[0.07] px-6 py-4 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(false)}
+                className="btn btn-ghost btn-md"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateRequest}
+                className="btn btn-primary btn-md"
+              >
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                Create Request
+              </button>
             </div>
           </div>
         </div>
@@ -1360,337 +1383,350 @@ const SupervisorDashboard = () => {
 
       {/* View Request Modal */}
       {showViewModal && selectedRequest && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-10 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-medium text-gray-900">Request Details</h3>
-                <button
-                  onClick={() => setShowViewModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
+        <div className="modal-backdrop">
+          <div className="modal-panel max-w-2xl" role="dialog" aria-modal="true" aria-labelledby="supervisor-view-title">
+            <div className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-ink/[0.07] bg-white px-6 py-5">
+              <h2 id="supervisor-view-title" className="font-display text-2xl text-ink">Request Details</h2>
+              <button
+                type="button"
+                onClick={() => setShowViewModal(false)}
+                aria-label="Close"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink/55 transition-colors hover:bg-ink/5 hover:text-ink"
+              >
+                <X className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </div>
 
-              <div className="space-y-4">
-                {/* Request Information */}
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h4 className="font-medium text-gray-900 mb-3">Request Information</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">Request ID</label>
-                      <p className="text-sm text-gray-900 font-mono">{selectedRequest._id}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">Type</label>
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(selectedRequest.type)}`}>
+            <div className="space-y-4 p-6">
+              {/* Request Information */}
+              <section className="rounded-2xl bg-sand-100 p-4 sm:p-5">
+                <h3 className="text-sm font-semibold text-ink">Request Information</h3>
+                <dl className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <dt className={DT}>Request ID</dt>
+                    <dd className="mt-1 break-all font-mono text-sm text-ink">{selectedRequest._id}</dd>
+                  </div>
+                  <div>
+                    <dt className={DT}>Type</dt>
+                    <dd className="mt-1">
+                      <span className={`chip ${getTypeColor(selectedRequest.type)}`}>
                         {selectedRequest.type === 'shift' ? 'Shift Swap' : 'Day Off Swap'}
                       </span>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">Status</label>
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(selectedRequest.status)}`}>
-                        {selectedRequest.status.replace('_', ' ').toUpperCase()}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className={DT}>Status</dt>
+                    <dd className="mt-1">
+                      <span className={`chip capitalize ${getStatusColor(selectedRequest.status)}`}>
+                        {selectedRequest.status.replace('_', ' ')}
                       </span>
-                    </div>
-                    {selectedRequest.type === 'shift' && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-500">Priority</label>
-                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full border ${getPriorityColor(selectedRequest, selectedRequest.type)}`}>
+                    </dd>
+                  </div>
+                  {selectedRequest.type === 'shift' && (
+                    <div>
+                      <dt className={DT}>Priority</dt>
+                      <dd className="mt-1">
+                        <span className={`chip border ${getPriorityColor(selectedRequest, selectedRequest.type)}`}>
                           {getPriorityText(selectedRequest, selectedRequest.type)}
                         </span>
-                      </div>
-                    )}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">Requester</label>
-                      <div className="flex items-center mt-1">
-                        <User className="h-4 w-4 text-gray-400 mr-2" />
-                        <div>
-                          <p className="text-sm text-gray-900">{selectedRequest.requesterUserId?.fullName || 'Unknown'}</p>
-                          <p className="text-xs text-gray-500">{selectedRequest.requesterUserId?.email || ''}</p>
-                        </div>
-                      </div>
+                      </dd>
                     </div>
-                    {selectedRequest.receiverUserId && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-500">Receiver</label>
-                        <div className="flex items-center mt-1">
-                          <User className="h-4 w-4 text-gray-400 mr-2" />
-                          <div>
-                            <p className="text-sm text-gray-900">{selectedRequest.receiverUserId?.fullName || 'Unknown'}</p>
-                            <p className="text-xs text-gray-500">{selectedRequest.receiverUserId?.email || ''}</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">Created</label>
-                      <p className="text-sm text-gray-900">{formatDate(selectedRequest.createdAt)}</p>
-                    </div>
-                    {selectedRequest.statusEditedBy && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-500">Last Action By</label>
-                        <p className="text-sm text-gray-900">{selectedRequest.statusEditedBy?.fullName || 'Unknown'}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Reason */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h4 className="font-medium text-blue-900 mb-2">Reason for Swap</h4>
-                  <p className="text-sm text-blue-800">{selectedRequest.reason}</p>
-                </div>
-
-                {/* Day Off Details (for day off requests) */}
-                {selectedRequest.type === 'dayoff' && (
-                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                    <h4 className="font-medium text-orange-900 mb-3">Day Off Swap Details</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-orange-700">Giving Up (Original Day Off)</label>
-                        <p className="text-sm text-orange-900">{formatDateOnly(selectedRequest.originalDayOff)}</p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-orange-700">Wants (Requested Day Off)</label>
-                        <p className="text-sm text-orange-900">{formatDateOnly(selectedRequest.requestedDayOff)}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Shift Details */}
-                {(selectedRequest.shiftStartDate || selectedRequest.shiftEndDate) && (
-                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                    <h4 className="font-medium text-purple-900 mb-3">Shift Details</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {selectedRequest.shiftStartDate && (
-                        <div>
-                          <label className="block text-sm font-medium text-purple-700">Shift Start</label>
-                          <p className="text-sm text-purple-900">{formatDate(selectedRequest.shiftStartDate)}</p>
-                        </div>
-                      )}
-                      {selectedRequest.shiftEndDate && (
-                        <div>
-                          <label className="block text-sm font-medium text-purple-700">Shift End</label>
-                          <p className="text-sm text-purple-900">{formatDate(selectedRequest.shiftEndDate)}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Overtime Details */}
-                {(selectedRequest.overtimeStart || selectedRequest.overtimeEnd) && (
-                  <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
-                    <h4 className="font-medium text-indigo-900 mb-3">Overtime Details</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {selectedRequest.overtimeStart && (
-                        <div>
-                          <label className="block text-sm font-medium text-indigo-700">Overtime Start</label>
-                          <p className="text-sm text-indigo-900">{formatDate(selectedRequest.overtimeStart)}</p>
-                        </div>
-                      )}
-                      {selectedRequest.overtimeEnd && (
-                        <div>
-                          <label className="block text-sm font-medium text-indigo-700">Overtime End</label>
-                          <p className="text-sm text-indigo-900">{formatDate(selectedRequest.overtimeEnd)}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Offers/Matches */}
-                {selectedRequest.type === 'shift' && selectedRequest.negotiationHistory && selectedRequest.negotiationHistory.length > 0 && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <h4 className="font-medium text-green-900 mb-3">Counter Offers ({selectedRequest.negotiationHistory.length})</h4>
-                    <div className="space-y-3">
-                      {selectedRequest.negotiationHistory.map((offer, index) => (
-                        <div key={index} className="bg-white rounded p-3 border border-green-200">
-                          <div className="flex justify-between items-start mb-2">
-                            <div>
-                              <p className="text-sm font-medium text-gray-900">
-                                {offer.offeredBy?.fullName || 'Unknown Employee'}
-                              </p>
-                              <p className="text-xs text-gray-500">{offer.offeredBy?.email || 'Unknown Email'}</p>
-                              <p className="text-xs text-gray-600">
-                                {formatDate(offer.shiftStartDate)} - {formatDate(offer.shiftEndDate)}
-                              </p>
-                              {offer.overtimeStart && (
-                                <p className="text-xs text-gray-600">
-                                  Overtime: {formatDate(offer.overtimeStart)} - {formatDate(offer.overtimeEnd)}
-                                </p>
-                              )}
-                            </div>
-                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${offer.status === 'accepted' ? 'bg-green-100 text-green-800' :
-                              offer.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                                'bg-yellow-100 text-yellow-800'
-                              }`}>
-                              {offer.status.toUpperCase()}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {selectedRequest.type === 'dayoff' && selectedRequest.matches && selectedRequest.matches.length > 0 && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <h4 className="font-medium text-green-900 mb-3">Match Proposals ({selectedRequest.matches.length})</h4>
-                    <div className="space-y-3">
-                      {selectedRequest.matches.map((match, index) => (
-                        <div key={index} className="bg-white rounded p-3 border border-green-200">
-                          <div className="flex justify-between items-start mb-2">
-                            <div>
-                              <p className="text-sm font-medium text-gray-900">
-                                {match.matchedBy?.fullName || 'Unknown Employee'}
-                              </p>
-                              <p className="text-xs text-gray-500">{match.matchedBy?.email || 'Unknown Email'}</p>
-                              <p className="text-xs text-gray-600">
-                                Their day off: {formatDateOnly(match.originalDayOff)}
-                              </p>
-                              {match.shiftStartDate && match.shiftEndDate && (
-                                <p className="text-xs text-gray-600">
-                                  Shift: {formatDate(match.shiftStartDate)} - {formatDate(match.shiftEndDate)}
-                                </p>
-                              )}
-                            </div>
-                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${match.status === 'accepted' ? 'bg-green-100 text-green-800' :
-                              match.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                                'bg-yellow-100 text-yellow-800'
-                              }`}>
-                              {match.status.toUpperCase()}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Rejection/Approval Comment */}
-                {(selectedRequest.status === 'rejected' || selectedRequest.status === 'approved') && selectedRequest.comment && (
-                  <div className={`${selectedRequest.status === 'rejected' ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'} border rounded-lg p-4`}>
-                    <h4 className={`font-medium ${selectedRequest.status === 'rejected' ? 'text-red-900' : 'text-green-900'} mb-2`}>
-                      {selectedRequest.status === 'rejected' ? 'Rejection' : 'Approval'} Comment
-                    </h4>
-                    <p className={`text-sm ${selectedRequest.status === 'rejected' ? 'text-red-800' : 'text-green-800'}`}>
-                      {selectedRequest.comment}
-                    </p>
-                  </div>
-                )}
-
-                {/* Action Buttons */}
-                <div className="flex justify-end space-x-3 pt-4 border-t">
-                  {/* Only show action buttons for employee requests, not own requests */}
-                  {canTakeAction(selectedRequest) && selectedRequest.requesterUserId?._id !== supervisorData?._id && (
-                    <>
-                      <button
-                        onClick={() => {
-                          setShowViewModal(false);
-                          setTimeout(() => openActionModal(selectedRequest, selectedRequest.type, 'approve'), 100);
-                        }}
-                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center"
-                      >
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        Approve Request
-                      </button>
-                      <button
-                        onClick={() => {
-                          setShowViewModal(false);
-                          setTimeout(() => openActionModal(selectedRequest, selectedRequest.type, 'reject'), 100);
-                        }}
-                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 flex items-center"
-                      >
-                        <XCircle className="h-4 w-4 mr-2" />
-                        Reject Request
-                      </button>
-                    </>
                   )}
-                </div>
-              </div>
+                  <div>
+                    <dt className={DT}>Requester</dt>
+                    <dd className="mt-1 flex items-center gap-2">
+                      <User className="h-4 w-4 shrink-0 text-ink/40" aria-hidden="true" />
+                      <div className="min-w-0">
+                        <p className="break-words text-sm text-ink">{selectedRequest.requesterUserId?.fullName || 'Unknown'}</p>
+                        <p className="break-all text-xs text-ink/50">{selectedRequest.requesterUserId?.email || ''}</p>
+                      </div>
+                    </dd>
+                  </div>
+                  {selectedRequest.receiverUserId && (
+                    <div>
+                      <dt className={DT}>Receiver</dt>
+                      <dd className="mt-1 flex items-center gap-2">
+                        <User className="h-4 w-4 shrink-0 text-ink/40" aria-hidden="true" />
+                        <div className="min-w-0">
+                          <p className="break-words text-sm text-ink">{selectedRequest.receiverUserId?.fullName || 'Unknown'}</p>
+                          <p className="break-all text-xs text-ink/50">{selectedRequest.receiverUserId?.email || ''}</p>
+                        </div>
+                      </dd>
+                    </div>
+                  )}
+                  <div>
+                    <dt className={DT}>Created</dt>
+                    <dd className="mt-1 text-sm text-ink">{formatDate(selectedRequest.createdAt)}</dd>
+                  </div>
+                  {selectedRequest.statusEditedBy && (
+                    <div>
+                      <dt className={DT}>Last Action By</dt>
+                      <dd className="mt-1 text-sm text-ink">{selectedRequest.statusEditedBy?.fullName || 'Unknown'}</dd>
+                    </div>
+                  )}
+                </dl>
+              </section>
+
+              {/* Reason */}
+              <section className="rounded-2xl border border-brand-200 bg-brand-50 p-4 sm:p-5">
+                <h3 className="text-sm font-semibold text-brand-700">Reason for Swap</h3>
+                <p className="mt-2 break-words text-sm text-ink/80">{selectedRequest.reason}</p>
+              </section>
+
+              {/* Day Off Details (for day off requests) */}
+              {selectedRequest.type === 'dayoff' && (
+                <section className="rounded-2xl border border-peach-300 bg-peach-100 p-4 sm:p-5">
+                  <h3 className="text-sm font-semibold text-peach-700">Day Off Swap Details</h3>
+                  <dl className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <dt className={DT}>Giving Up (Original Day Off)</dt>
+                      <dd className="mt-1 text-sm text-ink">{formatDateOnly(selectedRequest.originalDayOff)}</dd>
+                    </div>
+                    <div>
+                      <dt className={DT}>Wants (Requested Day Off)</dt>
+                      <dd className="mt-1 text-sm text-ink">{formatDateOnly(selectedRequest.requestedDayOff)}</dd>
+                    </div>
+                  </dl>
+                </section>
+              )}
+
+              {/* Shift Details */}
+              {(selectedRequest.shiftStartDate || selectedRequest.shiftEndDate) && (
+                <section className="rounded-2xl border border-lavender-300 bg-lavender-100 p-4 sm:p-5">
+                  <h3 className="text-sm font-semibold text-lavender-700">Shift Details</h3>
+                  <dl className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    {selectedRequest.shiftStartDate && (
+                      <div>
+                        <dt className={DT}>Shift Start</dt>
+                        <dd className="mt-1 text-sm text-ink">{formatDate(selectedRequest.shiftStartDate)}</dd>
+                      </div>
+                    )}
+                    {selectedRequest.shiftEndDate && (
+                      <div>
+                        <dt className={DT}>Shift End</dt>
+                        <dd className="mt-1 text-sm text-ink">{formatDate(selectedRequest.shiftEndDate)}</dd>
+                      </div>
+                    )}
+                  </dl>
+                </section>
+              )}
+
+              {/* Overtime Details */}
+              {(selectedRequest.overtimeStart || selectedRequest.overtimeEnd) && (
+                <section className="rounded-2xl border border-sand-300 bg-sand-100 p-4 sm:p-5">
+                  <h3 className="text-sm font-semibold text-ink">Overtime Details</h3>
+                  <dl className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    {selectedRequest.overtimeStart && (
+                      <div>
+                        <dt className={DT}>Overtime Start</dt>
+                        <dd className="mt-1 text-sm text-ink">{formatDate(selectedRequest.overtimeStart)}</dd>
+                      </div>
+                    )}
+                    {selectedRequest.overtimeEnd && (
+                      <div>
+                        <dt className={DT}>Overtime End</dt>
+                        <dd className="mt-1 text-sm text-ink">{formatDate(selectedRequest.overtimeEnd)}</dd>
+                      </div>
+                    )}
+                  </dl>
+                </section>
+              )}
+
+              {/* Offers/Matches */}
+              {selectedRequest.type === 'shift' && selectedRequest.negotiationHistory && selectedRequest.negotiationHistory.length > 0 && (
+                <section className="rounded-2xl border border-ink/[0.07] bg-sand-50 p-4 sm:p-5">
+                  <h3 className="text-sm font-semibold text-ink">Counter Offers ({selectedRequest.negotiationHistory.length})</h3>
+                  <ul className="mt-3 space-y-2">
+                    {selectedRequest.negotiationHistory.map((offer, index) => (
+                      <li key={index} className="rounded-xl border border-ink/[0.07] bg-white p-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="break-words text-sm font-medium text-ink">
+                              {offer.offeredBy?.fullName || 'Unknown Employee'}
+                            </p>
+                            <p className="break-all text-xs text-ink/50">{offer.offeredBy?.email || 'Unknown Email'}</p>
+                            <p className="mt-1 text-xs text-ink/65">
+                              {formatDate(offer.shiftStartDate)} - {formatDate(offer.shiftEndDate)}
+                            </p>
+                            {offer.overtimeStart && (
+                              <p className="text-xs text-ink/65">
+                                Overtime: {formatDate(offer.overtimeStart)} - {formatDate(offer.overtimeEnd)}
+                              </p>
+                            )}
+                          </div>
+                          <span className={`chip shrink-0 capitalize ${offer.status === 'accepted' ? 'bg-mint-200 text-mint-700' :
+                            offer.status === 'rejected' ? 'bg-rose-200 text-rose-700' :
+                              'bg-butter-200 text-butter-700'
+                            }`}>
+                            {offer.status}
+                          </span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
+              {selectedRequest.type === 'dayoff' && selectedRequest.matches && selectedRequest.matches.length > 0 && (
+                <section className="rounded-2xl border border-ink/[0.07] bg-sand-50 p-4 sm:p-5">
+                  <h3 className="text-sm font-semibold text-ink">Match Proposals ({selectedRequest.matches.length})</h3>
+                  <ul className="mt-3 space-y-2">
+                    {selectedRequest.matches.map((match, index) => (
+                      <li key={index} className="rounded-xl border border-ink/[0.07] bg-white p-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="break-words text-sm font-medium text-ink">
+                              {match.matchedBy?.fullName || 'Unknown Employee'}
+                            </p>
+                            <p className="break-all text-xs text-ink/50">{match.matchedBy?.email || 'Unknown Email'}</p>
+                            <p className="mt-1 text-xs text-ink/65">
+                              Their day off: {formatDateOnly(match.originalDayOff)}
+                            </p>
+                            {match.shiftStartDate && match.shiftEndDate && (
+                              <p className="text-xs text-ink/65">
+                                Shift: {formatDate(match.shiftStartDate)} - {formatDate(match.shiftEndDate)}
+                              </p>
+                            )}
+                          </div>
+                          <span className={`chip shrink-0 capitalize ${match.status === 'accepted' ? 'bg-mint-200 text-mint-700' :
+                            match.status === 'rejected' ? 'bg-rose-200 text-rose-700' :
+                              'bg-butter-200 text-butter-700'
+                            }`}>
+                            {match.status}
+                          </span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
+              {/* Rejection/Approval Comment */}
+              {(selectedRequest.status === 'rejected' || selectedRequest.status === 'approved') && selectedRequest.comment && (
+                <section className={`${selectedRequest.status === 'rejected' ? 'border-rose-300 bg-rose-100' : 'border-mint-300 bg-mint-100'} rounded-2xl border p-4 sm:p-5`}>
+                  <h3 className={`text-sm font-semibold ${selectedRequest.status === 'rejected' ? 'text-rose-700' : 'text-mint-700'}`}>
+                    {selectedRequest.status === 'rejected' ? 'Rejection' : 'Approval'} Comment
+                  </h3>
+                  <p className="mt-2 break-words text-sm text-ink/80">
+                    {selectedRequest.comment}
+                  </p>
+                </section>
+              )}
             </div>
+
+            {/* Action Buttons */}
+            {/* Only show action buttons for employee requests, not own requests */}
+            {canTakeAction(selectedRequest) && selectedRequest.requesterUserId?._id !== supervisorData?._id && (
+              <div className="flex flex-col-reverse gap-2 border-t border-ink/[0.07] px-6 py-4 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowViewModal(false);
+                    setTimeout(() => openActionModal(selectedRequest, selectedRequest.type, 'reject'), 100);
+                  }}
+                  className="btn btn-danger btn-md"
+                >
+                  <XCircle className="h-4 w-4" aria-hidden="true" />
+                  Reject Request
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowViewModal(false);
+                    setTimeout(() => openActionModal(selectedRequest, selectedRequest.type, 'approve'), 100);
+                  }}
+                  className="btn btn-primary btn-md"
+                >
+                  <CheckCircle className="h-4 w-4" aria-hidden="true" />
+                  Approve Request
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
 
       {/* Action Modal (Approve/Reject) */}
       {showActionModal && selectedRequest && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-medium text-gray-900">
-                  {actionType === 'approve' ? 'Approve' : 'Reject'} Request
-                </h3>
-                <button
-                  onClick={() => setShowActionModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
+        <div className="modal-backdrop">
+          <div className="modal-panel max-w-lg" role="dialog" aria-modal="true" aria-labelledby="supervisor-action-title">
+            <div className="flex items-center justify-between gap-4 border-b border-ink/[0.07] px-6 py-5">
+              <h2 id="supervisor-action-title" className="font-display text-2xl text-ink">
+                {actionType === 'approve' ? 'Approve' : 'Reject'} Request
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowActionModal(false)}
+                aria-label="Close"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink/55 transition-colors hover:bg-ink/5 hover:text-ink"
+              >
+                <X className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </div>
 
-              <div className="space-y-4">
-                {/* Request Summary */}
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h4 className="font-medium text-gray-900 mb-2">Request Summary</h4>
-                  <div className="text-sm text-gray-600 space-y-1">
-                    <p><strong>Type:</strong> {selectedRequest.type === 'shift' ? 'Shift Swap' : 'Day Off Swap'}</p>
-                    <p><strong>From:</strong> {selectedRequest.requesterUserId?.fullName}</p>
-                    {selectedRequest.receiverUserId && (
-                      <p><strong>With:</strong> {selectedRequest.receiverUserId?.fullName}</p>
-                    )}
-                    <p><strong>Reason:</strong> {selectedRequest.reason}</p>
-                  </div>
-                </div>
-
-                {/* Comment Field */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Comment {actionType === 'reject' ? '(Required)' : '(Optional)'}
-                  </label>
-                  <textarea
-                    value={actionComment}
-                    onChange={(e) => setActionComment(e.target.value)}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                    placeholder={
-                      actionType === 'approve'
-                        ? "Add an approval comment (optional)..."
-                        : "Please provide a reason for rejection..."
-                    }
-                  />
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex justify-end space-x-3 pt-4 border-t">
-                  <button
-                    onClick={() => setShowActionModal(false)}
-                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors duration-200"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleRequestAction}
-                    disabled={actionType === 'reject' && !actionComment.trim()}
-                    className={`px-4 py-2 text-white rounded-lg transition-colors duration-200 flex items-center disabled:opacity-50 disabled:cursor-not-allowed ${actionType === 'approve'
-                      ? 'bg-green-600 hover:bg-green-700'
-                      : 'bg-red-600 hover:bg-red-700'
-                      }`}
-                  >
-                    {actionType === 'approve' ? (
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                    ) : (
-                      <XCircle className="h-4 w-4 mr-2" />
-                    )}
-                    {actionType === 'approve' ? 'Approve' : 'Reject'}
-                  </button>
+            <div className="space-y-5 p-6">
+              {/* Request Summary */}
+              <div className="rounded-2xl bg-sand-100 p-4">
+                <h3 className="text-sm font-semibold text-ink">Request Summary</h3>
+                <div className="mt-2 space-y-1 break-words text-sm text-ink/65">
+                  <p><span className="font-semibold text-ink">Type:</span> {selectedRequest.type === 'shift' ? 'Shift Swap' : 'Day Off Swap'}</p>
+                  <p><span className="font-semibold text-ink">From:</span> {selectedRequest.requesterUserId?.fullName}</p>
+                  {selectedRequest.receiverUserId && (
+                    <p><span className="font-semibold text-ink">With:</span> {selectedRequest.receiverUserId?.fullName}</p>
+                  )}
+                  <p><span className="font-semibold text-ink">Reason:</span> {selectedRequest.reason}</p>
                 </div>
               </div>
+
+              {/* Comment Field */}
+              <div>
+                <label htmlFor="supervisor-action-comment" className="field-label">
+                  Comment {actionType === 'reject' ? '(Required)' : '(Optional)'}
+                </label>
+                <textarea
+                  id="supervisor-action-comment"
+                  value={actionComment}
+                  onChange={(e) => setActionComment(e.target.value)}
+                  rows={3}
+                  className="field resize-none"
+                  placeholder={
+                    actionType === 'approve'
+                      ? "Add an approval comment (optional)..."
+                      : "Please provide a reason for rejection..."
+                  }
+                />
+              </div>
+
+              {error && (
+                <div className="alert alert-error" role="alert">
+                  <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
+                  <p className="flex-1">{error}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col-reverse gap-2 border-t border-ink/[0.07] px-6 py-4 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setShowActionModal(false)}
+                className="btn btn-ghost btn-md"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleRequestAction}
+                disabled={actionType === 'reject' && !actionComment.trim()}
+                className={`btn btn-md ${actionType === 'approve' ? 'btn-primary' : 'btn-danger'}`}
+              >
+                {actionType === 'approve' ? (
+                  <CheckCircle className="h-4 w-4" aria-hidden="true" />
+                ) : (
+                  <XCircle className="h-4 w-4" aria-hidden="true" />
+                )}
+                {actionType === 'approve' ? 'Approve' : 'Reject'}
+              </button>
             </div>
           </div>
         </div>

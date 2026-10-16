@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, ArrowLeft, Loader, CheckCircle, AlertCircle } from 'lucide-react';
+import { Mail, ArrowLeft, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { checkAuthStatus } from '../utils/checkAuthRedirect';
+import AuthLayout from '../components/layout/AuthLayout';
+import { CONTACT_EMAIL } from '../components/Footer';
+
+const formatCooldown = (seconds) => `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, '0')}`;
 
 const CompanyVerifyOTP = () => {
   const location = useLocation();
@@ -170,7 +174,7 @@ const CompanyVerifyOTP = () => {
         setError('');
         // Optional: Show toast
         const toast = document.createElement('div');
-        toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-fade-in';
+        toast.className = 'fixed top-4 right-4 z-50 rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-white shadow-float animate-fade-in';
         toast.textContent = 'OTP resent to your email.';
         document.body.appendChild(toast);
         setTimeout(() => document.body.removeChild(toast), 3000);
@@ -186,122 +190,149 @@ const CompanyVerifyOTP = () => {
   // Success Screen
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-white flex items-center justify-center p-4">
-        <div className="max-w-md w-full text-center space-y-6">
-          <div className="flex items-center justify-center">
-            <div className="bg-green-100 p-4 rounded-full">
-              <CheckCircle className="h-12 w-12 text-green-600" />
-            </div>
-          </div>
-          <h2 className="text-3xl font-bold text-gray-900">Verified!</h2>
-          <p className="text-gray-600">Your company email has been successfully verified.</p>
-          <Loader className="animate-spin h-6 w-6 text-green-600 mx-auto" />
+      <AuthLayout aside="verify">
+        <div className="mx-auto w-full max-w-[440px] py-6 text-center lg:max-w-none" role="status" aria-live="polite">
+          <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-mint-200 text-mint-700 animate-scale-in">
+            <CheckCircle2 className="h-8 w-8" aria-hidden="true" />
+          </span>
+          <h1 className="mt-6 font-display text-[30px] leading-tight text-ink sm:text-[34px]">You’re verified</h1>
+          <p className="mt-2 text-[15px] leading-relaxed text-ink/60">Your company email has been successfully verified.</p>
+          <p className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-ink/55">
+            <Loader2 className="h-4 w-4 animate-spin text-mint-500" aria-hidden="true" />
+            Taking you to log in…
+          </p>
         </div>
-      </div>
+      </AuthLayout>
     );
   }
 
+  const resendDisabled = resendCooldown > 0 || isLoading || isLocked;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center p-4">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <button
-            onClick={() => navigate(-1)}
-            className="mb-6 inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors duration-200"
-            disabled={isLoading}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </button>
-          <div className="flex items-center justify-center mb-6">
-            <div className="bg-blue-100 p-3 rounded-full">
-              <Mail className="h-8 w-8 text-blue-600" />
-            </div>
+    <AuthLayout aside="verify" topLink={{ label: 'Log in', to: '/company_login' }}>
+      <div className="mx-auto w-full max-w-[440px] lg:max-w-none">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="-ml-1 mb-5 inline-flex h-10 items-center gap-1.5 rounded-full pl-1 pr-3 text-sm font-medium text-ink/55 transition-colors hover:text-ink disabled:opacity-50"
+          disabled={isLoading}
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          Back
+        </button>
+
+        <span className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-mint-200 text-mint-700 lg:hidden">
+          <Mail className="h-5 w-5" aria-hidden="true" />
+        </span>
+        <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-ink/45">Step 2 of 2 · Verify email</p>
+        <h1 className="mt-2 font-display text-[30px] leading-tight text-ink sm:text-[34px]">Check your email</h1>
+        <p className="mt-2 text-[15px] leading-relaxed text-ink/60">
+          We’ve sent a 6-digit code to{' '}
+          <span className="break-all font-semibold text-ink">{email || 'your email'}</span>
+        </p>
+
+        <fieldset className="mt-8">
+          <legend className="field-label mb-0">Enter the code</legend>
+          <div className="mt-2 grid max-w-[360px] grid-cols-6 gap-2 sm:gap-3">
+            {otp.map((digit, index) => (
+              <input
+                key={index}
+                id={`otp-${index}`}
+                type="text"
+                inputMode="numeric"
+                maxLength={1}
+                value={digit}
+                onChange={(e) => handleOtpChange(index, e.target.value)}
+                onKeyDown={(e) => handleKeyDown(index, e)}
+                onPaste={handlePaste}
+                disabled={isLoading || success}
+                aria-label={`Digit ${index + 1} of 6`}
+                aria-invalid={!!error}
+                className={`h-14 w-full min-w-0 rounded-xl border text-center font-display text-2xl text-ink shadow-soft transition-[border-color,box-shadow] duration-200 focus:shadow-ring focus:outline-none ${
+                  error
+                    ? 'border-rose-300 bg-rose-100 focus:border-rose-500'
+                    : 'border-ink/15 bg-white hover:border-ink/25 focus:border-brand-500'
+                } ${isLoading ? 'cursor-not-allowed opacity-60' : ''}`}
+              />
+            ))}
           </div>
-          <h2 className="text-3xl font-bold text-gray-900">Verify Your Email</h2>
-          <p className="mt-2 text-sm text-gray-600">We've sent a 6-digit code to</p>
-          <p className="text-sm font-medium text-gray-900">{email}</p>
+        </fieldset>
+
+        <div aria-live="polite">
+          {error && (
+            <div className="alert alert-error mt-5">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+              <p>{error}</p>
+            </div>
+          )}
         </div>
 
-        <div className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-4 text-center">
-              Enter the code
-            </label>
-            <div className="flex justify-center space-x-2 mb-4">
-              {otp.map((digit, index) => (
-                <input
-                  key={index}
-                  id={`otp-${index}`}
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={1}
-                  value={digit}
-                  onChange={(e) => handleOtpChange(index, e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(index, e)}
-                  onPaste={handlePaste}
-                  disabled={isLoading || success}
-                  className={`w-12 h-12 text-center text-lg font-semibold border-2 rounded-lg focus:outline-none focus:ring-2 transition-colors duration-200 ${error
-                    ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-500'
-                    : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
-                    } ${isLoading ? 'bg-gray-50 cursor-not-allowed' : 'bg-white'}`}
-                />
-              ))}
-            </div>
+        {attempts > 0 && !isLocked && (
+          <p className="mt-3 text-[13px] text-ink/50">{attempts}/5 attempts used</p>
+        )}
 
-            {error && (
-              <div className="flex items-center justify-center space-x-2 mb-4">
-                <AlertCircle className="h-4 w-4 text-red-500" />
-                <p className="text-sm text-red-600 text-center">{error}</p>
-              </div>
-            )}
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={isLoading || otp.join('').length !== 6 || isLocked}
+          className="btn btn-primary btn-lg mt-7 w-full"
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              Verifying…
+            </>
+          ) : (
+            'Verify email'
+          )}
+        </button>
 
-            {attempts > 0 && !isLocked && (
-              <p className="text-xs text-gray-500 text-center">{attempts}/5 attempts used</p>
-            )}
-          </div>
-
+        <p className="mt-5 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-sm text-ink/60">
+          <span>Didn’t receive the code?</span>
           <button
-            onClick={handleSubmit}
-            disabled={isLoading || otp.join('').length !== 6 || isLocked}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center"
+            type="button"
+            onClick={handleResend}
+            disabled={resendDisabled}
+            className={`inline-flex min-h-[40px] items-center font-semibold transition-colors duration-200 ${
+              resendDisabled ? 'cursor-not-allowed text-ink/40' : 'text-brand-600 hover:text-brand-700'
+            }`}
           >
-            {isLoading ? (
-              <>
-                <Loader className="animate-spin h-4 w-4 mr-2" />
-                Verifying...
-              </>
+            {resendCooldown > 0 ? (
+              <span className="tabular-nums">Resend in {formatCooldown(resendCooldown)}</span>
             ) : (
-              'Verify Email'
+              'Resend code'
             )}
           </button>
+        </p>
 
-          <div className="text-center space-y-2">
-            <p className="text-sm text-gray-600">Didn't receive the code?</p>
-            <button
-              onClick={handleResend}
-              disabled={resendCooldown > 0 || isLoading || isLocked}
-              className={`text-sm font-medium transition-colors duration-200 ${resendCooldown > 0 || isLoading || isLocked
-                ? 'text-gray-400 cursor-not-allowed'
-                : 'text-blue-600 hover:text-blue-700'
-                }`}
-            >
-              {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend code'}
-            </button>
-          </div>
-
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-gray-900 mb-2">Need help?</h4>
-            <ul className="text-xs text-gray-600 space-y-1">
-              <li>• Check spam or junk folder</li>
-              <li>• Ensure the email is correct</li>
-              <li>• Code expires in 15 minutes</li>
-              <li>• Contact support@example.com</li>
-            </ul>
-          </div>
+        <div className="card-sand mt-7 p-5">
+          <h2 className="text-sm font-semibold text-ink">Need help?</h2>
+          <ul className="mt-2.5 space-y-1.5 text-[13px] leading-relaxed text-ink/65">
+            <li className="flex gap-2">
+              <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-ink/35" aria-hidden="true" />
+              Check your spam or junk folder
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-ink/35" aria-hidden="true" />
+              Make sure the email address above is correct
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-ink/35" aria-hidden="true" />
+              Codes expire after 15 minutes
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-ink/35" aria-hidden="true" />
+              <span>
+                Still stuck? Email{' '}
+                <a href={`mailto:${CONTACT_EMAIL}`} className="break-all font-semibold text-brand-600 hover:text-brand-700">
+                  {CONTACT_EMAIL}
+                </a>
+              </span>
+            </li>
+          </ul>
         </div>
       </div>
-    </div>
+    </AuthLayout>
   );
 };
 

@@ -1,23 +1,41 @@
 import React, { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
 import {
-  User,
   Calendar,
   RefreshCw,
   Eye,
   X,
   LogOut,
-  ChevronDown,
   AlertCircle,
-  Loader,
   Search,
-  Bell,
   CalendarDays,
   Zap,
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useAuth } from '../auth/AuthContext';
 import { useNavigate } from 'react-router-dom';
+
+// Shared presentation classes
+const TH = 'whitespace-nowrap px-5 py-3 text-left text-[12px] font-semibold uppercase tracking-[0.1em] text-ink/50';
+const TD = 'px-5 py-4 align-middle';
+const DT = 'text-[12px] font-semibold uppercase tracking-[0.1em] text-ink/45';
+const ICON_BTN = 'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-55';
+
+const getInitials = (name, fallback) => {
+  const parts = (name || '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return fallback;
+  return parts.slice(0, 2).map((part) => part[0].toUpperCase()).join('');
+};
+
+const EmptyState = ({ icon: Icon, title, text }) => (
+  <div className="px-6 py-14 text-center">
+    <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-sand-200 text-ink/60">
+      <Icon className="h-5 w-5" aria-hidden="true" />
+    </span>
+    <p className="mt-4 font-display text-xl text-ink">{title}</p>
+    {text && <p className="mx-auto mt-1 max-w-sm text-sm text-ink/55">{text}</p>}
+  </div>
+);
 
 const ModeratorDashboard = () => {
   const navigate = useNavigate();
@@ -135,8 +153,8 @@ const ModeratorDashboard = () => {
       text: "You will be logged out of your account",
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
+      confirmButtonColor: '#2998FF',
+      cancelButtonColor: '#A9A4B4',
       confirmButtonText: 'Yes, logout',
       cancelButtonText: 'Cancel'
     });
@@ -162,14 +180,14 @@ const ModeratorDashboard = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'approved': return 'bg-green-100 text-green-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'approved': return 'bg-mint-200 text-mint-700';
+      case 'rejected': return 'bg-rose-200 text-rose-700';
+      default: return 'bg-sand-200 text-ink/70';
     }
   };
 
   const getTypeColor = (type) => {
-    return type === 'shift' ? 'bg-purple-100 text-purple-800' : 'bg-orange-100 text-orange-800';
+    return type === 'shift' ? 'bg-lavender-200 text-lavender-700' : 'bg-peach-200 text-peach-700';
   };
 
   const formatDate = (dateString) => {
@@ -198,181 +216,184 @@ const ModeratorDashboard = () => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
 
+  // Close the details modal with Escape
+  useEffect(() => {
+    if (!showViewModal) return undefined;
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setShowViewModal(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [showViewModal]);
+
   // Dashboard Overview Tab
   const renderOverview = () => (
     <div className="space-y-6">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
-        <div className="bg-white rounded-lg shadow p-6 w-full">
-          <div className="flex items-center">
-            <div className="bg-purple-100 p-3 rounded-full">
-              <Zap className="h-6 w-6 text-purple-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Shift Requests</p>
-              <p className="text-2xl font-bold text-gray-900">{shiftRequests.length}</p>
-            </div>
-          </div>
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
+        <div className="stat-card">
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-lavender-200 text-lavender-700">
+            <Zap className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <p className="mt-4 font-display text-3xl leading-none text-ink">{shiftRequests.length}</p>
+          <p className="mt-2 text-sm font-medium text-ink/55">Shift Requests</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-6 w-full">
-          <div className="flex items-center">
-            <div className="bg-orange-100 p-3 rounded-full">
-              <CalendarDays className="h-6 w-6 text-orange-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Day Off Requests</p>
-              <p className="text-2xl font-bold text-gray-900">{dayOffRequests.length}</p>
-            </div>
-          </div>
+        <div className="stat-card">
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-peach-200 text-peach-700">
+            <CalendarDays className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <p className="mt-4 font-display text-3xl leading-none text-ink">{dayOffRequests.length}</p>
+          <p className="mt-2 text-sm font-medium text-ink/55">Day Off Requests</p>
         </div>
       </div>
       {/* Recent Requests */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">Recent Requests</h3>
+      <section className="app-card overflow-hidden" aria-labelledby="moderator-recent-title">
+        <div className="border-b border-ink/[0.07] px-5 py-4 sm:px-6">
+          <h2 id="moderator-recent-title" className="font-display text-xl text-ink">Recent Requests</h2>
         </div>
-        <div className="p-6">
-          {[...filteredShiftRequests, ...filteredDayOffRequests]
-            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-            .slice(0, 5)
-            .map((request) => (
-              <div key={request._id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
-                <div className="flex items-center space-x-3">
-                  <div className="bg-gray-100 rounded-full p-2">
-                    {request.type === 'shift' ? <Zap className="h-4 w-4 text-purple-600" /> : <CalendarDays className="h-4 w-4 text-orange-600" />}
+        {[...filteredShiftRequests, ...filteredDayOffRequests].length > 0 ? (
+          <ul className="divide-y divide-ink/[0.06]">
+            {[...filteredShiftRequests, ...filteredDayOffRequests]
+              .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+              .slice(0, 5)
+              .map((request) => (
+                <li key={request._id} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${request.type === 'shift' ? 'bg-lavender-200 text-lavender-700' : 'bg-peach-200 text-peach-700'}`}>
+                      {request.type === 'shift' ? <Zap className="h-4 w-4" aria-hidden="true" /> : <CalendarDays className="h-4 w-4" aria-hidden="true" />}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-ink">{request.reason}</p>
+                      <p className="text-xs text-ink/50">{formatDate(request.createdAt)}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{request.reason}</p>
-                    <p className="text-xs text-gray-500">{formatDate(request.createdAt)}</p>
+                  <div className="flex shrink-0 flex-wrap items-center gap-2 pl-[52px] sm:pl-0">
+                    <span className={`chip ${getTypeColor(request.type || (request.shiftStartDate ? 'shift' : 'dayoff'))}`}>
+                      {request.type === 'shift' ? 'Shift' : 'Day Off'}
+                    </span>
+                    <span className={`chip capitalize ${getStatusColor(request.status)}`}>
+                      {request.status}
+                    </span>
                   </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(request.type || (request.shiftStartDate ? 'shift' : 'dayoff'))}`}>
-                    {request.type === 'shift' ? 'Shift' : 'Day Off'}
-                  </span>
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(request.status)}`}>
-                    {request.status.toUpperCase()}
-                  </span>
-                </div>
-              </div>
-            ))}
-        </div>
-      </div>
+                </li>
+              ))}
+          </ul>
+        ) : (
+          <EmptyState
+            icon={Calendar}
+            title="No requests to show"
+            text="Approved and rejected swap requests will appear here."
+          />
+        )}
+      </section>
     </div>
   );
 
   // Requests Management Tab
   const renderRequests = () => (
     <div className="space-y-6">
-      {/* Filters and Create Button */}
-      <div className="bg-white rounded-lg shadow p-4">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
-          <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
+      {/* Filters */}
+      <div className="app-card p-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <div className="relative sm:w-72">
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/40" aria-hidden="true" />
               <input
                 type="text"
                 placeholder="Search by reason..."
+                aria-label="Search requests by reason or employee"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="field h-11 py-0 pl-10"
               />
             </div>
             {/* Status Filter */}
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              aria-label="Filter by status"
+              className="field h-11 py-0 sm:w-44"
             >
               <option value="all">All Status</option>
               <option value="approved">Approved</option>
               <option value="rejected">Rejected</option>
             </select>
           </div>
-          <div className="flex space-x-2">
-            <button
-              onClick={() => {
-                loadShiftRequests();
-                loadDayOffRequests();
-              }}
-              className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => {
+              loadShiftRequests();
+              loadDayOffRequests();
+            }}
+            className="btn btn-white btn-md self-start md:self-auto"
+          >
+            <RefreshCw className="h-4 w-4" aria-hidden="true" />
+            Refresh
+          </button>
         </div>
       </div>
       {/* Requests Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="app-card overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full text-left">
+            <thead className="bg-sand-100">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Request Details
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Type
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Created
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
+                <th scope="col" className={TH}>Request Details</th>
+                <th scope="col" className={TH}>Type</th>
+                <th scope="col" className={TH}>Status</th>
+                <th scope="col" className={TH}>Created</th>
+                <th scope="col" className={`${TH} text-right`}>Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-ink/[0.06]">
               {[...filteredShiftRequests.map(req => ({ ...req, type: 'shift' })), ...filteredDayOffRequests.map(req => ({ ...req, type: 'dayoff' }))]
                 .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
                 .map((request) => (
-                  <tr key={request._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="bg-gray-100 rounded-full p-2 mr-3">
-                          {request.type === 'shift' ? <Zap className="h-4 w-4 text-purple-600" /> : <CalendarDays className="h-4 w-4 text-orange-600" />}
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">{request.reason}</div>
-                          <div className="text-sm text-gray-500">
+                  <tr key={request._id} className="transition-colors hover:bg-sand-50">
+                    <td className={TD}>
+                      <div className="flex items-center gap-3">
+                        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${request.type === 'shift' ? 'bg-lavender-200 text-lavender-700' : 'bg-peach-200 text-peach-700'}`}>
+                          {request.type === 'shift' ? <Zap className="h-4 w-4" aria-hidden="true" /> : <CalendarDays className="h-4 w-4" aria-hidden="true" />}
+                        </span>
+                        <div className="min-w-0">
+                          <div className="max-w-[280px] truncate text-sm font-medium text-ink" title={request.reason}>{request.reason}</div>
+                          <div className="whitespace-nowrap text-[13px] text-ink/60">
                             {request.type === 'shift'
                               ? `${formatDate(request.shiftStartDate)} - ${formatDate(request.shiftEndDate)}`
-                              : `${formatDateOnly(request.originalDayOff)} â†’ ${formatDateOnly(request.requestedDayOff)}`
+                              : `${formatDateOnly(request.originalDayOff)} → ${formatDateOnly(request.requestedDayOff)}`
                             }
                           </div>
-                          <div className="text-xs text-gray-400">
+                          <div className="whitespace-nowrap text-xs text-ink/45">
                             By: {request.requesterUserId?.fullName || 'Unknown'}
                           </div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(request.type)}`}>
+                    <td className={TD}>
+                      <span className={`chip whitespace-nowrap ${getTypeColor(request.type)}`}>
                         {request.type === 'shift' ? 'Shift Swap' : 'Day Off Swap'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(request.status)}`}>
-                        {request.status.replace('_', ' ').toUpperCase()}
+                    <td className={TD}>
+                      <span className={`chip whitespace-nowrap capitalize ${getStatusColor(request.status)}`}>
+                        {request.status.replace('_', ' ')}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className={`${TD} whitespace-nowrap text-sm text-ink/55`}>
                       {formatDate(request.createdAt)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center space-x-1">
+                    <td className={`${TD} text-right`}>
+                      <div className="flex items-center justify-end gap-2">
                         {/* View Button - Always available */}
                         <button
+                          type="button"
                           onClick={() => viewRequestDetails(request, request.type)}
-                          className="inline-flex items-center px-2 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-700 transition-colors duration-200"
+                          className={`${ICON_BTN} border border-ink/10 bg-white text-ink hover:bg-sand-100`}
                           title="View Details"
+                          aria-label="View details"
                         >
-                          <Eye className="h-3 w-3" />
+                          <Eye className="h-4 w-4" aria-hidden="true" />
                         </button>
                       </div>
                     </td>
@@ -382,13 +403,11 @@ const ModeratorDashboard = () => {
           </table>
         </div>
         {[...filteredShiftRequests, ...filteredDayOffRequests].length === 0 && !isLoading && (
-          <div className="text-center py-8">
-            <Calendar className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No requests found</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              Try adjusting your search or filters.
-            </p>
-          </div>
+          <EmptyState
+            icon={Calendar}
+            title="No requests found"
+            text="Try adjusting your search or filters."
+          />
         )}
       </div>
     </div>
@@ -396,220 +415,224 @@ const ModeratorDashboard = () => {
 
   if (isLoading && shiftRequests.length === 0 && dayOffRequests.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader className="mx-auto h-8 w-8 text-blue-600 animate-spin" />
-          <p className="mt-2 text-gray-600">Loading dashboard...</p>
+      <div className="app-page flex items-center justify-center px-5">
+        <div className="text-center" role="status" aria-live="polite">
+          <div
+            className="mx-auto h-10 w-10 animate-spin rounded-full border-[3px] border-brand-100 border-t-brand-500"
+            aria-hidden="true"
+          />
+          <p className="mt-4 text-sm text-ink/55">Loading dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="pt-2 bg-gradient-to-b from-primary-50 to-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row gap-8 sm:gap-0 sm:justify-between sm:items-center py-6">
-            <div className="flex items-center">
-              <User className="h-8 w-8 text-blue-600 mr-3" />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+    <div className="app-page">
+      {/* Page hero: identity + account actions */}
+      <section className="app-hero">
+        <div className="container-site py-6 sm:py-8">
+          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+            <div className="flex min-w-0 items-center gap-4">
+              <span
+                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-mint-200 font-display text-xl text-mint-700"
+                aria-hidden="true"
+              >
+                {getInitials(moderatorData?.fullName, 'M')}
+              </span>
+              <div className="min-w-0">
+                <span className="chip bg-sand-200 text-ink/70">Moderator</span>
+                <h1 className="app-title mt-1.5 break-words">
                   Welcome, {moderatorData?.fullName || 'Moderator'}
                 </h1>
-                <p className="text-sm text-gray-500">{moderatorData?.email || 'Your Email'}</p>
-                <p className="text-sm text-gray-500">{moderatorData?.companyName || 'Your Company'}</p>
+                <p className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-ink/55">
+                  <span className="break-all">{moderatorData?.email || 'Your Email'}</span>
+                  <span aria-hidden="true">·</span>
+                  <span>{moderatorData?.companyName || 'Your Company'}</span>
+                </p>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <Bell className="h-6 w-6 text-gray-600 hover:text-gray-900 cursor-pointer" />
-              </div>
-              <div className="relative group">
-                <button className="flex items-center space-x-2 text-gray-700 hover:text-gray-900">
-                  <div className="bg-blue-100 rounded-full p-2">
-                    <User className="h-4 w-4 text-blue-600" />
-                  </div>
-                  <span className="text-sm font-medium">{moderatorData?.fullName}</span>
-                  <ChevronDown className="h-4 w-4" />
-                </button>
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                  >
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Logout
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Error Message */}
-        {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="flex items-center">
-              <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-              <p className="text-red-600">{error}</p>
-              <button
-                onClick={() => setError('')}
-                className="ml-auto text-red-500 hover:text-red-700"
-              >
-                <X className="h-4 w-4" />
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="chip h-9 bg-sand-200 px-3 text-ink/70">
+                <Eye className="h-3.5 w-3.5" aria-hidden="true" />
+                Read-only view
+              </span>
+              <button type="button" onClick={handleLogout} className="btn btn-white btn-md">
+                <LogOut className="h-4 w-4" aria-hidden="true" />
+                Log out
               </button>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Main Content */}
+      <div className="container-site py-8">
+        {/* Error Message */}
+        {error && (
+          <div className="alert alert-error mb-6" role="alert">
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
+            <p className="flex-1">{error}</p>
+            <button
+              type="button"
+              onClick={() => setError('')}
+              aria-label="Dismiss error"
+              className="-m-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full hover:bg-rose-200"
+            >
+              <X className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
         )}
         {/* Tabs */}
-        <div className="mb-6">
-          <nav className="flex space-x-8">
-            <button
-              onClick={() => setActiveTab('overview')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'overview'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-            >
-              Overview
-            </button>
-            <button
-              onClick={() => setActiveTab('requests')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'requests'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-            >
-              All Requests
-            </button>
-          </nav>
+        <div
+          role="tablist"
+          aria-label="Dashboard sections"
+          className="app-tabs mb-6 w-fit max-w-full rounded-full border border-ink/[0.07] bg-white p-1 shadow-soft"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'overview'}
+            onClick={() => setActiveTab('overview')}
+            className="app-tab"
+          >
+            Overview
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'requests'}
+            onClick={() => setActiveTab('requests')}
+            className="app-tab"
+          >
+            All Requests
+          </button>
         </div>
         {/* Tab Content */}
         {activeTab === 'overview' && renderOverview()}
         {activeTab === 'requests' && renderRequests()}
-      </main>
+      </div>
       {/* View Request Modal */}
       {showViewModal && selectedRequest && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-10 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-medium text-gray-900">Request Details</h3>
-                <button
-                  onClick={() => setShowViewModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-              <div className="space-y-4">
-                {/* Request Information */}
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h4 className="font-medium text-gray-900 mb-3">Request Information</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">ID</label>
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(selectedRequest._id)}`}>
-                        {selectedRequest._id}
-                      </span>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">Type</label>
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(selectedRequest.type)}`}>
+        <div className="modal-backdrop">
+          <div className="modal-panel max-w-2xl" role="dialog" aria-modal="true" aria-labelledby="moderator-view-title">
+            <div className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-ink/[0.07] bg-white px-6 py-5">
+              <h2 id="moderator-view-title" className="font-display text-2xl text-ink">Request Details</h2>
+              <button
+                type="button"
+                onClick={() => setShowViewModal(false)}
+                aria-label="Close"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink/55 transition-colors hover:bg-ink/5 hover:text-ink"
+              >
+                <X className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </div>
+            <div className="space-y-4 p-6">
+              {/* Request Information */}
+              <section className="rounded-2xl bg-sand-100 p-4 sm:p-5">
+                <h3 className="text-sm font-semibold text-ink">Request Information</h3>
+                <dl className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <dt className={DT}>ID</dt>
+                    <dd className="mt-1 break-all font-mono text-sm text-ink">{selectedRequest._id}</dd>
+                  </div>
+                  <div>
+                    <dt className={DT}>Type</dt>
+                    <dd className="mt-1">
+                      <span className={`chip ${getTypeColor(selectedRequest.type)}`}>
                         {selectedRequest.type === 'shift' ? 'Shift Swap' : 'Day Off Swap'}
                       </span>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">Status</label>
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(selectedRequest.status)}`}>
-                        {selectedRequest.status.replace('_', ' ').toUpperCase()}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className={DT}>Status</dt>
+                    <dd className="mt-1">
+                      <span className={`chip capitalize ${getStatusColor(selectedRequest.status)}`}>
+                        {selectedRequest.status.replace('_', ' ')}
                       </span>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">Requested By</label>
-                      <p className="text-sm text-gray-900">{selectedRequest.requesterUserId?.fullName || 'Unknown'}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">Created</label>
-                      <p className="text-sm text-gray-900">{formatDate(selectedRequest.createdAt)}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">Reason</label>
-                      <p className="text-sm text-gray-900">{selectedRequest.reason}</p>
-                    </div>
+                    </dd>
                   </div>
-                </div>
-                {/* Day Off Details (for day off requests) */}
-                {selectedRequest.type === 'dayoff' && (
-                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                    <h4 className="font-medium text-orange-900 mb-3">Day Off Details</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <dt className={DT}>Requested By</dt>
+                    <dd className="mt-1 text-sm text-ink">{selectedRequest.requesterUserId?.fullName || 'Unknown'}</dd>
+                  </div>
+                  <div>
+                    <dt className={DT}>Created</dt>
+                    <dd className="mt-1 text-sm text-ink">{formatDate(selectedRequest.createdAt)}</dd>
+                  </div>
+                  <div>
+                    <dt className={DT}>Reason</dt>
+                    <dd className="mt-1 break-words text-sm text-ink">{selectedRequest.reason}</dd>
+                  </div>
+                </dl>
+              </section>
+              {/* Day Off Details (for day off requests) */}
+              {selectedRequest.type === 'dayoff' && (
+                <section className="rounded-2xl border border-peach-300 bg-peach-100 p-4 sm:p-5">
+                  <h3 className="text-sm font-semibold text-peach-700">Day Off Details</h3>
+                  <dl className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <dt className={DT}>Original Day Off</dt>
+                      <dd className="mt-1 text-sm text-ink">{formatDateOnly(selectedRequest.originalDayOff)}</dd>
+                    </div>
+                    <div>
+                      <dt className={DT}>Requested Day Off</dt>
+                      <dd className="mt-1 text-sm text-ink">{formatDateOnly(selectedRequest.requestedDayOff)}</dd>
+                    </div>
+                  </dl>
+                </section>
+              )}
+              {/* Shift Details */}
+              {(selectedRequest.shiftStartDate || selectedRequest.shiftEndDate) && (
+                <section className="rounded-2xl border border-lavender-300 bg-lavender-100 p-4 sm:p-5">
+                  <h3 className="text-sm font-semibold text-lavender-700">Shift Details</h3>
+                  <dl className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    {selectedRequest.shiftStartDate && (
                       <div>
-                        <label className="block text-sm font-medium text-orange-700">Original Day Off</label>
-                        <p className="text-sm text-orange-900">{formatDateOnly(selectedRequest.originalDayOff)}</p>
+                        <dt className={DT}>Shift Start</dt>
+                        <dd className="mt-1 text-sm text-ink">{formatDate(selectedRequest.shiftStartDate)}</dd>
                       </div>
+                    )}
+                    {selectedRequest.shiftEndDate && (
                       <div>
-                        <label className="block text-sm font-medium text-orange-700">Requested Day Off</label>
-                        <p className="text-sm text-orange-900">{formatDateOnly(selectedRequest.requestedDayOff)}</p>
+                        <dt className={DT}>Shift End</dt>
+                        <dd className="mt-1 text-sm text-ink">{formatDate(selectedRequest.shiftEndDate)}</dd>
                       </div>
-                    </div>
-                  </div>
-                )}
-                {/* Shift Details */}
-                {(selectedRequest.shiftStartDate || selectedRequest.shiftEndDate) && (
-                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                    <h4 className="font-medium text-purple-900 mb-3">Shift Details</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {selectedRequest.shiftStartDate && (
-                        <div>
-                          <label className="block text-sm font-medium text-purple-700">Shift Start</label>
-                          <p className="text-sm text-purple-900">{formatDate(selectedRequest.shiftStartDate)}</p>
-                        </div>
-                      )}
-                      {selectedRequest.shiftEndDate && (
-                        <div>
-                          <label className="block text-sm font-medium text-purple-700">Shift End</label>
-                          <p className="text-sm text-purple-900">{formatDate(selectedRequest.shiftEndDate)}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-                {/* Overtime Details */}
-                {(selectedRequest.overtimeStart || selectedRequest.overtimeEnd) && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 className="font-medium text-blue-900 mb-3">Overtime Details</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {selectedRequest.overtimeStart && (
-                        <div>
-                          <label className="block text-sm font-medium text-blue-700">Overtime Start</label>
-                          <p className="text-sm text-blue-900">{formatDate(selectedRequest.overtimeStart)}</p>
-                        </div>
-                      )}
-                      {selectedRequest.overtimeEnd && (
-                        <div>
-                          <label className="block text-sm font-medium text-blue-700">Overtime End</label>
-                          <p className="text-sm text-blue-900">{formatDate(selectedRequest.overtimeEnd)}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-                {/* Rejection/Approval Comment */}
-                {(selectedRequest.status === 'rejected' || selectedRequest.status === 'approved') && selectedRequest.comment && (
-                  <div className={`${selectedRequest.status === 'rejected' ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'} border rounded-lg p-4`}>
-                    <h4 className={`font-medium ${selectedRequest.status === 'rejected' ? 'text-red-900' : 'text-green-900'} mb-2`}>
-                      {selectedRequest.status === 'rejected' ? 'Rejection' : 'Approval'} Comment
-                    </h4>
-                    <p className={`text-sm ${selectedRequest.status === 'rejected' ? 'text-red-800' : 'text-green-800'}`}>
-                      {selectedRequest.comment}
-                    </p>
-                  </div>
-                )}
-              </div>
+                    )}
+                  </dl>
+                </section>
+              )}
+              {/* Overtime Details */}
+              {(selectedRequest.overtimeStart || selectedRequest.overtimeEnd) && (
+                <section className="rounded-2xl border border-brand-200 bg-brand-50 p-4 sm:p-5">
+                  <h3 className="text-sm font-semibold text-brand-700">Overtime Details</h3>
+                  <dl className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    {selectedRequest.overtimeStart && (
+                      <div>
+                        <dt className={DT}>Overtime Start</dt>
+                        <dd className="mt-1 text-sm text-ink">{formatDate(selectedRequest.overtimeStart)}</dd>
+                      </div>
+                    )}
+                    {selectedRequest.overtimeEnd && (
+                      <div>
+                        <dt className={DT}>Overtime End</dt>
+                        <dd className="mt-1 text-sm text-ink">{formatDate(selectedRequest.overtimeEnd)}</dd>
+                      </div>
+                    )}
+                  </dl>
+                </section>
+              )}
+              {/* Rejection/Approval Comment */}
+              {(selectedRequest.status === 'rejected' || selectedRequest.status === 'approved') && selectedRequest.comment && (
+                <section className={`${selectedRequest.status === 'rejected' ? 'border-rose-300 bg-rose-100' : 'border-mint-300 bg-mint-100'} rounded-2xl border p-4 sm:p-5`}>
+                  <h3 className={`text-sm font-semibold ${selectedRequest.status === 'rejected' ? 'text-rose-700' : 'text-mint-700'}`}>
+                    {selectedRequest.status === 'rejected' ? 'Rejection' : 'Approval'} Comment
+                  </h3>
+                  <p className="mt-2 break-words text-sm text-ink/80">
+                    {selectedRequest.comment}
+                  </p>
+                </section>
+              )}
             </div>
           </div>
         </div>

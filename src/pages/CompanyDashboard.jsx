@@ -5,25 +5,45 @@ import {
   UserCheck,
   UserX,
   Clock,
-  Building,
   Bell,
   Search,
   Check,
   X,
   Eye,
   LogOut,
-  ChevronDown,
   AlertCircle,
   Loader,
   RefreshCw,
-  FileDown,
   Upload,
-  RefreshCw as RefreshIcon,
   Hash,
+  Plus,
+  Trash2,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import Swal from 'sweetalert2';
+
+// Shared presentation classes
+const TH = 'whitespace-nowrap px-5 py-3 text-left text-[12px] font-semibold uppercase tracking-[0.1em] text-ink/50';
+const TD = 'px-5 py-4 align-middle';
+const DT = 'text-[12px] font-semibold uppercase tracking-[0.1em] text-ink/45';
+const ICON_BTN = 'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-55';
+
+const getInitials = (name, fallback) => {
+  const parts = (name || '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return fallback;
+  return parts.slice(0, 2).map((part) => part[0].toUpperCase()).join('');
+};
+
+const EmptyState = ({ icon: Icon, title, text }) => (
+  <div className="px-6 py-14 text-center">
+    <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-sand-200 text-ink/60">
+      <Icon className="h-5 w-5" aria-hidden="true" />
+    </span>
+    <p className="mt-4 font-display text-xl text-ink">{title}</p>
+    {text && <p className="mx-auto mt-1 max-w-sm text-sm text-ink/55">{text}</p>}
+  </div>
+);
 
 const CompanyDashboard = () => {
   const navigate = useNavigate();
@@ -91,6 +111,22 @@ const CompanyDashboard = () => {
   useEffect(() => {
     filterRequests();
   }, [requests, searchTerm, statusFilter, positionFilter]);
+
+  // Close any open modal with Escape (same effect as its Cancel / close button)
+  useEffect(() => {
+    if (!showViewModal && !showActionModal && !uploadModalOpen) return undefined;
+    const onKeyDown = (e) => {
+      if (e.key !== 'Escape') return;
+      setShowActionModal(false);
+      setShowViewModal(false);
+      if (uploadModalOpen) {
+        setUploadModalOpen(false);
+        setFile(null);
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [showViewModal, showActionModal, uploadModalOpen]);
 
   const loadCompanyData = () => {
     const stored = Cookies.get('company_data');
@@ -254,8 +290,8 @@ const CompanyDashboard = () => {
       text: 'You will be logged out of your account',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
+      confirmButtonColor: '#2998FF',
+      cancelButtonColor: '#A9A4B4',
       confirmButtonText: 'Yes, logout',
     });
 
@@ -271,19 +307,19 @@ const CompanyDashboard = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'approved': return 'bg-green-100 text-green-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'pending': return 'bg-butter-200 text-butter-700';
+      case 'approved': return 'bg-mint-200 text-mint-700';
+      case 'rejected': return 'bg-rose-200 text-rose-700';
+      default: return 'bg-sand-200 text-ink/70';
     }
   };
 
   const getPositionColor = (position) => {
     switch (position) {
-      case 'supervisor': return 'bg-blue-100 text-blue-800';
-      case 'expert': return 'bg-purple-100 text-purple-800';
-      case 'sme': return 'bg-orange-100 text-orange-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'supervisor': return 'bg-brand-100 text-brand-700';
+      case 'expert': return 'bg-lavender-200 text-lavender-700';
+      case 'sme': return 'bg-peach-200 text-peach-700';
+      default: return 'bg-sand-200 text-ink/70';
     }
   };
 
@@ -299,7 +335,7 @@ const CompanyDashboard = () => {
 
   const showSuccessToast = (msg) => {
     const el = document.createElement('div');
-    el.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+    el.className = 'fixed top-[86px] right-4 z-[70] max-w-[calc(100vw-2rem)] bg-ink text-white text-sm font-medium px-4 py-3 rounded-2xl shadow-float animate-slide-down';
     el.textContent = msg;
     document.body.appendChild(el);
     setTimeout(() => document.body.removeChild(el), 3000);
@@ -356,6 +392,8 @@ const CompanyDashboard = () => {
       text: 'Are you sure you want to delete this employee ID?',
       icon: 'warning',
       showCancelButton: true,
+      confirmButtonColor: '#E0566E',
+      cancelButtonColor: '#A9A4B4',
       confirmButtonText: 'Delete',
       cancelButtonText: 'Cancel',
     });
@@ -422,91 +460,87 @@ const CompanyDashboard = () => {
 
   const renderOverview = () => (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg shadow p-6 flex items-center">
-          <div className="bg-blue-100 p-3 rounded-full"><Users className="h-6 w-6 text-blue-600" /></div>
-          <div className="ml-4">
-            <p className="text-sm font-medium text-gray-600">Total Requests</p>
-            <p className="text-2xl font-bold text-gray-900">{dashboardStats.totalRequests}</p>
-          </div>
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <div className="stat-card">
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-lavender-200 text-lavender-700"><Users className="h-5 w-5" aria-hidden="true" /></span>
+          <p className="mt-4 font-display text-3xl leading-none text-ink">{dashboardStats.totalRequests}</p>
+          <p className="mt-2 text-sm font-medium text-ink/55">Total Requests</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-6 flex items-center">
-          <div className="bg-yellow-100 p-3 rounded-full"><Clock className="h-6 w-6 text-yellow-600" /></div>
-          <div className="ml-4">
-            <p className="text-sm font-medium text-gray-600">Pending</p>
-            <p className="text-2xl font-bold text-gray-900">{dashboardStats.pendingRequests}</p>
-          </div>
+        <div className="stat-card">
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-butter-200 text-butter-700"><Clock className="h-5 w-5" aria-hidden="true" /></span>
+          <p className="mt-4 font-display text-3xl leading-none text-ink">{dashboardStats.pendingRequests}</p>
+          <p className="mt-2 text-sm font-medium text-ink/55">Pending</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-6 flex items-center">
-          <div className="bg-green-100 p-3 rounded-full"><UserCheck className="h-6 w-6 text-green-600" /></div>
-          <div className="ml-4">
-            <p className="text-sm font-medium text-gray-600">Approved</p>
-            <p className="text-2xl font-bold text-gray-900">{dashboardStats.approvedRequests}</p>
-          </div>
+        <div className="stat-card">
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-mint-200 text-mint-700"><UserCheck className="h-5 w-5" aria-hidden="true" /></span>
+          <p className="mt-4 font-display text-3xl leading-none text-ink">{dashboardStats.approvedRequests}</p>
+          <p className="mt-2 text-sm font-medium text-ink/55">Approved</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-6 flex items-center">
-          <div className="bg-red-100 p-3 rounded-full"><UserX className="h-6 w-6 text-red-600" /></div>
-          <div className="ml-4">
-            <p className="text-sm font-medium text-gray-600">Rejected</p>
-            <p className="text-2xl font-bold text-gray-900">{dashboardStats.rejectedRequests}</p>
-          </div>
+        <div className="stat-card">
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-200 text-rose-700"><UserX className="h-5 w-5" aria-hidden="true" /></span>
+          <p className="mt-4 font-display text-3xl leading-none text-ink">{dashboardStats.rejectedRequests}</p>
+          <p className="mt-2 text-sm font-medium text-ink/55">Rejected</p>
         </div>
-        {/* <div className="bg-white rounded-lg shadow p-6 flex items-center">
-          <div className="bg-purple-100 p-3 rounded-full"><Building className="h-6 w-6 text-purple-600" /></div>
-          <div className="ml-4">
-            <p className="text-sm font-medium text-gray-600">Active Employees</p>
-            <p className="text-2xl font-bold text-gray-900">{dashboardStats.totalEmployees}</p>
-          </div>
-        </div> */}
       </div>
 
-      <div className="bg-white rounded-lg shadow">
-        <div className="px-6 py-4 border-b">
-          <h3 className="text-lg font-medium">Recent Requests</h3>
+      <section className="app-card overflow-hidden" aria-labelledby="company-recent-title">
+        <div className="border-b border-ink/[0.07] px-5 py-4 sm:px-6">
+          <h2 id="company-recent-title" className="font-display text-xl text-ink">Recent Requests</h2>
         </div>
-        <div className="p-6">
-          {filteredRequests.slice(0, 5).map((req) => (
-            <div key={req._id} className="flex items-center justify-between py-3 border-b last:border-b-0">
-              <div className="flex items-center space-x-3">
-                <div className="bg-gray-100 rounded-full p-2"><Users className="h-4 w-4 text-gray-600" /></div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">{req.fullName}</p>
-                  <p className="text-xs text-gray-500">{req.email}</p>
+        {filteredRequests.length > 0 ? (
+          <ul className="divide-y divide-ink/[0.06]">
+            {filteredRequests.slice(0, 5).map((req) => (
+              <li key={req._id} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sand-200 text-[13px] font-semibold text-ink/70" aria-hidden="true">
+                    {getInitials(req.fullName, '?')}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-ink">{req.fullName}</p>
+                    <p className="truncate text-xs text-ink/50">{req.email}</p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className={`px-2 py-1 text-xs rounded-full ${getPositionColor(req.position)}`}>{req.position}</span>
-                <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(req.status)}`}>{req.status}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+                <div className="flex shrink-0 flex-wrap items-center gap-2 pl-[52px] sm:pl-0">
+                  <span className={`chip uppercase tracking-wide ${getPositionColor(req.position)}`}>{req.position}</span>
+                  <span className={`chip capitalize ${getStatusColor(req.status)}`}>{req.status}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <EmptyState
+            icon={Users}
+            title="No requests to show"
+            text="When employees request to join your company, they will appear here."
+          />
+        )}
+      </section>
     </div>
   );
 
   const renderRequests = () => (
     <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow p-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0">
-          <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+      <div className="app-card p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+            <div className="relative sm:w-72">
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/40" aria-hidden="true" />
               <input
                 type="text"
                 placeholder="Search..."
+                aria-label="Search by name, email or account name"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="field h-11 py-0 pl-10"
               />
             </div>
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none">
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} aria-label="Filter by status" className="field h-11 py-0 sm:w-40">
               <option value="all">All Status</option>
               <option value="pending">Pending</option>
               <option value="approved">Approved</option>
               <option value="rejected">Rejected</option>
             </select>
-            <select value={positionFilter} onChange={(e) => setPositionFilter(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none">
+            <select value={positionFilter} onChange={(e) => setPositionFilter(e.target.value)} aria-label="Filter by position" className="field h-11 py-0 sm:w-44">
               <option value="all">All Positions</option>
               <option value="expert">Expert</option>
               <option value="moderator">Moderator</option>
@@ -514,58 +548,80 @@ const CompanyDashboard = () => {
               <option value="sme">SME</option>
             </select>
           </div>
-          <button onClick={loadRequests} className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-            <RefreshIcon className="h-4 w-4 mr-2" /> Refresh
+          <button type="button" onClick={loadRequests} className="btn btn-white btn-md self-start lg:self-auto">
+            <RefreshCw className="h-4 w-4" aria-hidden="true" /> Refresh
           </button>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="app-card overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full text-left">
+            <thead className="bg-sand-100">
               <tr>
-                <th className="px-6 py-3 text-left text-xs uppercase">Employee</th>
-                <th className="px-6 py-3 text-left text-xs uppercase">Position</th>
-                <th className="px-6 py-3 text-left text-xs uppercase">Status</th>
-                <th className="px-6 py-3 text-left text-xs uppercase">Submitted</th>
-                <th className="px-6 py-3 text-left text-xs uppercase">Actions</th>
+                <th scope="col" className={TH}>Employee</th>
+                <th scope="col" className={TH}>Position</th>
+                <th scope="col" className={TH}>Status</th>
+                <th scope="col" className={TH}>Submitted</th>
+                <th scope="col" className={`${TH} text-right`}>Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-ink/[0.06]">
               {filteredRequests.map((req) => (
-                <tr key={req._id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center">
-                      <div className="bg-gray-100 rounded-full p-2 mr-3"><Users className="h-4 w-4 text-gray-600" /></div>
-                      <div>
-                        <div className="text-sm font-medium">{req.fullName}</div>
-                        <div className="text-sm text-gray-500">{req.email}</div>
-                        <div className="text-xs text-gray-400">@{req.accountName}</div>
+                <tr key={req._id} className="transition-colors hover:bg-sand-50">
+                  <td className={TD}>
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sand-200 text-[13px] font-semibold text-ink/70" aria-hidden="true">
+                        {getInitials(req.fullName, '?')}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="whitespace-nowrap text-sm font-medium text-ink">{req.fullName}</div>
+                        <div className="whitespace-nowrap text-[13px] text-ink/60">{req.email}</div>
+                        <div className="whitespace-nowrap text-xs text-ink/45">@{req.accountName}</div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 text-xs rounded-full ${getPositionColor(req.position)}`}>{req.position.toUpperCase()}</span>
+                  <td className={TD}>
+                    <span className={`chip tracking-wide ${getPositionColor(req.position)}`}>{req.position.toUpperCase()}</span>
                   </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(req.status)}`}>{req.status}</span>
+                  <td className={TD}>
+                    <span className={`chip capitalize ${getStatusColor(req.status)}`}>{req.status}</span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">{formatDate(req.createdAt)}</td>
-                  <td className="px-6 py-4 text-sm font-medium">
-                    <div className="flex items-center space-x-2">
+                  <td className={`${TD} whitespace-nowrap text-sm text-ink/55`}>{formatDate(req.createdAt)}</td>
+                  <td className={TD}>
+                    <div className="flex items-center justify-end gap-2">
                       {req.status === 'pending' && (
                         <>
-                          <button onClick={() => openActionModal(req, 'approve')} disabled={processingRequest === req._id} className="flex items-center px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700">
-                            {processingRequest === req._id ? <Loader className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                          <button
+                            type="button"
+                            onClick={() => openActionModal(req, 'approve')}
+                            disabled={processingRequest === req._id}
+                            className={`${ICON_BTN} bg-mint-200 text-mint-700 hover:bg-mint-300`}
+                            title="Approve"
+                            aria-label={`Approve ${req.fullName}`}
+                          >
+                            {processingRequest === req._id ? <Loader className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Check className="h-4 w-4" aria-hidden="true" />}
                           </button>
-                          <button onClick={() => openActionModal(req, 'reject')} disabled={processingRequest === req._id} className="flex items-center px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700">
-                            <X className="h-3 w-3" />
+                          <button
+                            type="button"
+                            onClick={() => openActionModal(req, 'reject')}
+                            disabled={processingRequest === req._id}
+                            className={`${ICON_BTN} bg-rose-200 text-rose-700 hover:bg-rose-300`}
+                            title="Reject"
+                            aria-label={`Reject ${req.fullName}`}
+                          >
+                            <X className="h-4 w-4" aria-hidden="true" />
                           </button>
                         </>
                       )}
-                      <button onClick={() => viewRequestDetails(req)} className="flex items-center px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700">
-                        <Eye className="h-3 w-3" />
+                      <button
+                        type="button"
+                        onClick={() => viewRequestDetails(req)}
+                        className={`${ICON_BTN} border border-ink/10 bg-white text-ink hover:bg-sand-100`}
+                        title="View details"
+                        aria-label={`View details for ${req.fullName}`}
+                      >
+                        <Eye className="h-4 w-4" aria-hidden="true" />
                       </button>
                     </div>
                   </td>
@@ -575,10 +631,11 @@ const CompanyDashboard = () => {
           </table>
         </div>
         {filteredRequests.length === 0 && !isLoading && (
-          <div className="text-center py-8">
-            <Users className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium">No requests found</h3>
-          </div>
+          <EmptyState
+            icon={Users}
+            title="No requests found"
+            text={requests.length === 0 ? 'Join requests from your employees will appear here.' : 'Try adjusting your search or filters.'}
+          />
         )}
       </div>
     </div>
@@ -589,36 +646,44 @@ const CompanyDashboard = () => {
 
     return (
       <div className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <h2 className="text-xl font-semibold text-gray-900">Manage Employee IDs</h2>
-          <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <h2 className="font-display text-2xl text-ink">Manage Employee IDs</h2>
+            <p className="mt-1 max-w-xl text-sm text-ink/55">
+              Employees need an ID from this list to request to join your company.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
             <button
+              type="button"
               onClick={openUploadModal}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              className="btn btn-white btn-md"
             >
-              <Upload className="h-4 w-4 mr-2" /> Upload Excel
+              <Upload className="h-4 w-4" aria-hidden="true" /> Upload Excel
             </button>
             <button
+              type="button"
               onClick={() => setActiveTab('add-id')}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+              className="btn btn-primary btn-md"
             >
-              + Add ID
+              <Plus className="h-4 w-4" aria-hidden="true" /> Add ID
             </button>
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0 p-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+        <div className="app-card overflow-hidden">
+          <div className="flex flex-col gap-3 border-b border-ink/[0.07] p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="relative sm:w-72">
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/40" aria-hidden="true" />
               <input
                 type="text"
                 placeholder="Search..."
+                aria-label="Search by name or employee ID"
                 value={employeeSearchTerm}
                 onChange={(e) => setEmployeeSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="field h-11 py-0 pl-10"
               />
             </div>
-            <select value={employeePositionFilter} onChange={(e) => setEmployeePositionFilter(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none">
+            <select value={employeePositionFilter} onChange={(e) => setEmployeePositionFilter(e.target.value)} aria-label="Filter by position" className="field h-11 py-0 sm:w-44">
               <option value="all">All Positions</option>
               <option value="expert">Expert</option>
               <option value="moderator">Moderator</option>
@@ -627,32 +692,35 @@ const CompanyDashboard = () => {
             </select>
           </div>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full text-left">
+              <thead className="bg-sand-100">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs uppercase">ID</th>
-                  <th className="px-6 py-3 text-left text-xs uppercase">Name</th>
-                  <th className="px-6 py-3 text-left text-xs uppercase">Position</th>
-                  <th className="px-6 py-3 text-left text-xs uppercase">Created</th>
-                  <th className="px-6 py-3 text-left text-xs uppercase">Actions</th>
+                  <th scope="col" className={TH}>ID</th>
+                  <th scope="col" className={TH}>Name</th>
+                  <th scope="col" className={TH}>Position</th>
+                  <th scope="col" className={TH}>Created</th>
+                  <th scope="col" className={`${TH} text-right`}>Actions</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="divide-y divide-ink/[0.06]">
                 {filteredEmployeeIds.map((emp) => (
-                  <tr key={emp._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{emp.employeeId}</td>
-                    <td className="px-6 py-4 text-sm text-gray-800">{emp.name}</td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2 py-1 text-xs rounded-full ${getPositionColor(emp.position)}`}>
+                  <tr key={emp._id} className="transition-colors hover:bg-sand-50">
+                    <td className={`${TD} whitespace-nowrap font-mono text-[13px] font-medium text-ink`}>{emp.employeeId}</td>
+                    <td className={`${TD} whitespace-nowrap text-sm text-ink/80`}>{emp.name}</td>
+                    <td className={TD}>
+                      <span className={`chip tracking-wide ${getPositionColor(emp.position)}`}>
                         {emp.position.toUpperCase()}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{formatDate(emp.createdAt)}</td>
-                    <td className="px-6 py-4 text-sm font-medium">
+                    <td className={`${TD} whitespace-nowrap text-sm text-ink/55`}>{formatDate(emp.createdAt)}</td>
+                    <td className={`${TD} text-right`}>
                       <button
+                        type="button"
                         onClick={() => handleDeleteEmployeeId(emp._id)}
-                        className="text-red-600 hover:text-red-800"
+                        className="btn btn-ghost btn-sm h-10 text-rose-700 hover:bg-rose-100"
+                        aria-label={`Delete ${emp.employeeId}`}
                       >
+                        <Trash2 className="h-4 w-4" aria-hidden="true" />
                         Delete
                       </button>
                     </td>
@@ -662,11 +730,11 @@ const CompanyDashboard = () => {
             </table>
           </div>
           {filteredEmployeeIds.length === 0 && (
-            <div className="text-center py-8">
-              <FileDown className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium">No employee IDs found</h3>
-              <p className="mt-1 text-sm text-gray-500">Try adjusting your search or filters.</p>
-            </div>
+            <EmptyState
+              icon={Hash}
+              title={employeeIds.length === 0 ? 'No employee IDs yet' : 'No employee IDs found'}
+              text={employeeIds.length === 0 ? 'Add an ID or upload a spreadsheet to get started.' : 'Try adjusting your search or filters.'}
+            />
           )}
         </div>
       </div>
@@ -674,44 +742,52 @@ const CompanyDashboard = () => {
   };
 
   const renderAddIdForm = () => (
-    <div className="bg-white rounded-lg shadow p-6 max-w-lg mx-auto">
-      <h2 className="text-lg font-medium mb-4">Add New Employee ID</h2>
-      <form onSubmit={handleAddEmployeeId} className="space-y-4">
+    <div className="app-card mx-auto max-w-lg p-6 sm:p-8">
+      <h2 className="font-display text-2xl text-ink">Add New Employee ID</h2>
+      <p className="mt-1 text-sm text-ink/55">Employees enter this ID when they request to join your company.</p>
+      <form onSubmit={handleAddEmployeeId} className="mt-6 space-y-5">
         <div>
-          <label className="block text-sm font-medium text-gray-700">Employee ID</label>
-          <div className="flex">
+          <label htmlFor="employee-id-input" className="field-label">Employee ID</label>
+          <div className="flex gap-2">
             <input
+              id="employee-id-input"
               type="text"
               value={employeeIdForm.employeeId}
               onChange={(e) => setEmployeeIdForm({ ...employeeIdForm, employeeId: e.target.value })}
               placeholder="EMP-XXXX-EXP-12345"
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="field min-w-0 flex-1 font-mono"
             />
             <button
               type="button"
               onClick={() => setEmployeeIdForm({ ...employeeIdForm, employeeId: generateAutoId() })}
-              className="px-3 py-2 bg-gray-200 text-gray-700 rounded-r-lg hover:bg-gray-300"
+              className="btn btn-white btn-md h-auto shrink-0 border border-ink/15"
+              title="Generate ID"
+              aria-label="Generate an employee ID"
             >
-              <RefreshIcon className="h-4 w-4" />
+              <RefreshCw className="h-4 w-4" aria-hidden="true" />
+              <span className="hidden sm:inline">Generate</span>
             </button>
           </div>
+          <p className="field-hint">Type an ID or generate one automatically.</p>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">Full Name</label>
+          <label htmlFor="employee-name-input" className="field-label">Full Name</label>
           <input
+            id="employee-name-input"
             type="text"
             value={employeeIdForm.name}
             onChange={(e) => setEmployeeIdForm({ ...employeeIdForm, name: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="field"
             required
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">Position</label>
+          <label htmlFor="employee-position-input" className="field-label">Position</label>
           <select
+            id="employee-position-input"
             value={employeeIdForm.position}
             onChange={(e) => setEmployeeIdForm({ ...employeeIdForm, position: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none"
+            className="field"
           >
             <option value="expert">Expert</option>
             <option value="moderator">Moderator</option>
@@ -719,17 +795,17 @@ const CompanyDashboard = () => {
             <option value="sme">SME</option>
           </select>
         </div>
-        <div className="flex justify-end space-x-3 pt-4">
+        <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
           <button
             type="button"
             onClick={() => setActiveTab('employeeIds')}
-            className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+            className="btn btn-ghost btn-md"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="btn btn-primary btn-md"
           >
             Save ID
           </button>
@@ -740,153 +816,210 @@ const CompanyDashboard = () => {
 
   if (isLoading && requests.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader className="mx-auto h-8 w-8 text-blue-600 animate-spin" />
-          <p className="mt-2 text-gray-600">Loading...</p>
+      <div className="app-page flex items-center justify-center px-5">
+        <div className="text-center" role="status" aria-live="polite">
+          <div
+            className="mx-auto h-10 w-10 animate-spin rounded-full border-[3px] border-brand-100 border-t-brand-500"
+            aria-hidden="true"
+          />
+          <p className="mt-4 text-sm text-ink/55">Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="pt-2 bg-gradient-to-b from-primary-50 to-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
+    <div className="app-page">
+      {/* Page hero: company identity + account actions */}
+      <section className="app-hero">
+        <div className="container-site py-6 sm:py-8">
+          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+            <div className="flex min-w-0 items-center gap-4">
               {companyData?.logo ? (
                 <img
                   src={`${process.env.REACT_APP_URI_API_URL}/images/companies/logos/${companyData.logo}`}
                   alt={`${companyData.name} Logo`}
-                  className="h-10 w-10 object-contain mr-3 rounded-full"
+                  className="h-14 w-14 shrink-0 rounded-2xl border border-ink/[0.07] bg-white object-contain p-1.5"
                 />
               ) : (
-                <Building className="h-8 w-8 text-blue-600 mr-2 flex-shrink-0" />
+                <span
+                  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-lavender-200 font-display text-xl text-lavender-700"
+                  aria-hidden="true"
+                >
+                  {getInitials(companyData?.name, 'C')}
+                </span>
               )}
 
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">{companyData?.name || 'Dashboard'}</h1>
-                <p className="text-sm text-gray-500">{companyData?.email}</p>
+              <div className="min-w-0">
+                <span className="chip bg-sand-200 text-ink/70">Company admin</span>
+                <h1 className="app-title mt-1.5 break-words">{companyData?.name || 'Dashboard'}</h1>
+                <p className="mt-1 break-all text-sm text-ink/55">{companyData?.email}</p>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <Bell className="h-6 w-6 text-gray-600 hover:text-gray-900 cursor-pointer" />
-                {dashboardStats.pendingRequests > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                    {dashboardStats.pendingRequests}
-                  </span>
-                )}
-              </div>
-              <div className="relative group">
-                <button className="flex items-center space-x-2 text-gray-700 hover:text-gray-900">
-                  <div className="bg-blue-100 rounded-full p-2"><Building className="h-4 w-4 text-blue-600" /></div>
-                  <span className="text-sm font-medium">{companyData?.name}</span>
-                  <ChevronDown className="h-4 w-4" />
-                </button>
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                  >
-                    <LogOut className="h-4 w-4 mr-2" /> Logout
-                  </button>
-                </div>
-              </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {dashboardStats.pendingRequests > 0 ? (
+                <span className="chip h-9 bg-butter-200 px-3 text-butter-700">
+                  <Bell className="h-3.5 w-3.5" aria-hidden="true" />
+                  {dashboardStats.pendingRequests} pending
+                  <span className="sr-only"> join requests</span>
+                </span>
+              ) : (
+                <span className="chip h-9 bg-sand-200 px-3 text-ink/60">
+                  <Bell className="h-3.5 w-3.5" aria-hidden="true" />
+                  No pending requests
+                </span>
+              )}
+              <button type="button" onClick={handleLogout} className="btn btn-white btn-md">
+                <LogOut className="h-4 w-4" aria-hidden="true" /> Log out
+              </button>
             </div>
           </div>
         </div>
-      </header>
+      </section>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="container-site py-8">
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-center">
-            <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-            <p className="text-red-600 flex-1">{error}</p>
-            <button onClick={() => setError('')} className="text-red-500"><X className="h-4 w-4" /></button>
+          <div className="alert alert-error mb-6" role="alert">
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
+            <p className="flex-1">{error}</p>
+            <button
+              type="button"
+              onClick={() => setError('')}
+              aria-label="Dismiss error"
+              className="-m-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full hover:bg-rose-200"
+            >
+              <X className="h-4 w-4" aria-hidden="true" />
+            </button>
           </div>
         )}
 
-        <div className="mb-6">
-          <nav className="flex space-x-8">
-            <button
-              onClick={() => setActiveTab('overview')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'overview' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'}`}
-            >
-              Overview
-            </button>
-            <button
-              onClick={() => setActiveTab('requests')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'requests' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'}`}
-            >
-              Employee Requests
-              {dashboardStats.pendingRequests > 0 && (
-                <span className="ml-2 bg-red-100 text-red-600 py-0.5 px-2 rounded-full text-xs">{dashboardStats.pendingRequests}</span>
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('employeeIds')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'employeeIds' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'}`}
-            >
-              Employee IDs
-            </button>
-          </nav>
+        <div
+          role="tablist"
+          aria-label="Dashboard sections"
+          className="app-tabs mb-6 w-fit max-w-full rounded-full border border-ink/[0.07] bg-white p-1 shadow-soft"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'overview'}
+            onClick={() => setActiveTab('overview')}
+            className="app-tab"
+          >
+            Overview
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'requests'}
+            onClick={() => setActiveTab('requests')}
+            className="app-tab"
+          >
+            Employee Requests
+            {dashboardStats.pendingRequests > 0 && (
+              <span className={`chip px-2 py-0.5 ${activeTab === 'requests' ? 'bg-white/20 text-white' : 'bg-butter-200 text-butter-700'}`}>
+                {dashboardStats.pendingRequests}
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'employeeIds' || activeTab === 'add-id'}
+            onClick={() => setActiveTab('employeeIds')}
+            className="app-tab"
+          >
+            Employee IDs
+          </button>
         </div>
 
         {activeTab === 'overview' && renderOverview()}
         {activeTab === 'requests' && renderRequests()}
         {activeTab === 'employeeIds' && renderEmployeeIds()}
         {activeTab === 'add-id' && renderAddIdForm()}
-      </main>
+      </div>
 
       {/* Upload Modal */}
-      {/* Upload Modal */}
       {uploadModalOpen && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-medium mb-4">Upload Employee IDs (Excel)</h3>
-            <p className="text-sm text-gray-600 mb-4">Columns: Employee ID, Name, Position</p>
-            <table className="min-w-full divide-y divide-gray-200 mb-4">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs uppercase">Employee ID</th>
-                  <th className="px-6 py-3 text-left text-xs uppercase">Name</th>
-                  <th className="px-6 py-3 text-left text-xs uppercase">Position</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                <tr>
-                  <td className="px-6 py-4 text-sm text-gray-800">EMP001</td>
-                  <td className="px-6 py-4 text-sm text-gray-800">Ahmed Mohamed</td>
-                  <td className="px-6 py-4 text-sm text-gray-800">expert</td>
-                </tr>
-                <tr>
-                  <td className="px-6 py-4 text-sm text-gray-800">EMP002</td>
-                  <td className="px-6 py-4 text-sm text-gray-800">Sara Ali</td>
-                  <td className="px-6 py-4 text-sm text-gray-800">expert</td>
-                </tr>
-                <tr>
-                  <td className="px-6 py-4 text-sm text-gray-800">EMP003</td>
-                  <td className="px-6 py-4 text-sm text-gray-800">Mohamed Essam</td>
-                  <td className="px-6 py-4 text-sm text-gray-800">supervisor</td>
-                </tr>
-                <tr>
-                  <td className="px-6 py-4 text-sm text-gray-800">EMP004</td>
-                  <td className="px-6 py-4 text-sm text-gray-800">Mona Adel</td>
-                  <td className="px-6 py-4 text-sm text-gray-800">expert</td>
-                </tr>
-                <tr>
-                  <td className="px-6 py-4 text-sm text-gray-800">EMP005</td>
-                  <td className="px-6 py-4 text-sm text-gray-800">Mostafa Hassan</td>
-                  <td className="px-6 py-4 text-sm text-gray-800">expert</td>
-                </tr>
-              </tbody>
-            </table>
-            <input type="file" accept=".xlsx,.xls,.csv" onChange={handleFileChange} className="w-full mb-4" />
-            <div className="flex justify-end space-x-3">
-              <button onClick={closeUploadModal} className="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400">Cancel</button>
-              <button onClick={handleFileUpload} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Upload</button>
+        <div className="modal-backdrop">
+          <div className="modal-panel max-w-2xl" role="dialog" aria-modal="true" aria-labelledby="upload-modal-title">
+            <div className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-ink/[0.07] bg-white px-6 py-5">
+              <h2 id="upload-modal-title" className="font-display text-2xl text-ink">Upload Employee IDs (Excel)</h2>
+              <button
+                type="button"
+                onClick={closeUploadModal}
+                aria-label="Close"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink/55 transition-colors hover:bg-ink/5 hover:text-ink"
+              >
+                <X className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </div>
+            <div className="space-y-5 p-6">
+              <p className="text-sm text-ink/60">Columns: Employee ID, Name, Position</p>
+              <div className="overflow-hidden rounded-2xl border border-ink/[0.07]">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-left">
+                    <thead className="bg-sand-100">
+                      <tr>
+                        <th scope="col" className={TH}>Employee ID</th>
+                        <th scope="col" className={TH}>Name</th>
+                        <th scope="col" className={TH}>Position</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-ink/[0.06] text-sm text-ink/80">
+                      <tr>
+                        <td className="whitespace-nowrap px-5 py-2.5 font-mono text-[13px]">EMP001</td>
+                        <td className="whitespace-nowrap px-5 py-2.5">Ahmed Mohamed</td>
+                        <td className="whitespace-nowrap px-5 py-2.5">expert</td>
+                      </tr>
+                      <tr>
+                        <td className="whitespace-nowrap px-5 py-2.5 font-mono text-[13px]">EMP002</td>
+                        <td className="whitespace-nowrap px-5 py-2.5">Sara Ali</td>
+                        <td className="whitespace-nowrap px-5 py-2.5">expert</td>
+                      </tr>
+                      <tr>
+                        <td className="whitespace-nowrap px-5 py-2.5 font-mono text-[13px]">EMP003</td>
+                        <td className="whitespace-nowrap px-5 py-2.5">Mohamed Essam</td>
+                        <td className="whitespace-nowrap px-5 py-2.5">supervisor</td>
+                      </tr>
+                      <tr>
+                        <td className="whitespace-nowrap px-5 py-2.5 font-mono text-[13px]">EMP004</td>
+                        <td className="whitespace-nowrap px-5 py-2.5">Mona Adel</td>
+                        <td className="whitespace-nowrap px-5 py-2.5">expert</td>
+                      </tr>
+                      <tr>
+                        <td className="whitespace-nowrap px-5 py-2.5 font-mono text-[13px]">EMP005</td>
+                        <td className="whitespace-nowrap px-5 py-2.5">Mostafa Hassan</td>
+                        <td className="whitespace-nowrap px-5 py-2.5">expert</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div>
+                <input id="employee-ids-file" type="file" accept=".xlsx,.xls,.csv" onChange={handleFileChange} className="peer sr-only" />
+                <label
+                  htmlFor="employee-ids-file"
+                  className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-ink/15 bg-sand-50 px-6 py-8 text-center transition-colors duration-200 hover:border-brand-400 hover:bg-brand-50 peer-focus-visible:border-brand-500 peer-focus-visible:shadow-ring"
+                >
+                  <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-100 text-brand-600">
+                    <Upload className="h-5 w-5" aria-hidden="true" />
+                  </span>
+                  <span className="break-all text-sm font-semibold text-ink">{file ? file.name : 'Choose a file to upload'}</span>
+                  <span className="text-[13px] text-ink/50">{file ? 'Choose a different file' : '.xlsx, .xls or .csv'}</span>
+                </label>
+              </div>
+              {error && (
+                <div className="alert alert-error" role="alert">
+                  <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
+                  <p className="flex-1">{error}</p>
+                </div>
+              )}
+            </div>
+            <div className="flex flex-col-reverse gap-2 border-t border-ink/[0.07] px-6 py-4 sm:flex-row sm:justify-end">
+              <button type="button" onClick={closeUploadModal} className="btn btn-ghost btn-md">Cancel</button>
+              <button type="button" onClick={handleFileUpload} className="btn btn-primary btn-md">
+                <Upload className="h-4 w-4" aria-hidden="true" /> Upload
+              </button>
             </div>
           </div>
         </div>
@@ -894,127 +1027,159 @@ const CompanyDashboard = () => {
 
       {/* View Modal */}
       {showViewModal && selectedRequest && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-medium">Request Details</h3>
-                <button onClick={() => setShowViewModal(false)} className="text-gray-400 hover:text-gray-600"><X className="h-5 w-5" /></button>
-              </div>
-              <div className="space-y-4">
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h4 className="font-medium mb-3">Employee Information</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div><label className="block text-sm font-medium text-gray-500">Full Name</label><p>{selectedRequest.fullName}</p></div>
-                    <div><label className="block text-sm font-medium text-gray-500">Account Name</label><p>{selectedRequest.accountName}</p></div>
-                    <div><label className="block text-sm font-medium text-gray-500">Email</label><p>{selectedRequest.email}</p></div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">Position</label>
-                      <span className={`inline-flex px-2 py-1 text-xs rounded-full ${getPositionColor(selectedRequest.position)}`}>
+        <div className="modal-backdrop">
+          <div className="modal-panel max-w-2xl" role="dialog" aria-modal="true" aria-labelledby="company-view-title">
+            <div className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-ink/[0.07] bg-white px-6 py-5">
+              <h2 id="company-view-title" className="font-display text-2xl text-ink">Request Details</h2>
+              <button
+                type="button"
+                onClick={() => setShowViewModal(false)}
+                aria-label="Close"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink/55 transition-colors hover:bg-ink/5 hover:text-ink"
+              >
+                <X className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </div>
+            <div className="space-y-4 p-6">
+              <section className="rounded-2xl bg-sand-100 p-4 sm:p-5">
+                <h3 className="text-sm font-semibold text-ink">Employee Information</h3>
+                <dl className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div><dt className={DT}>Full Name</dt><dd className="mt-1 break-words text-sm text-ink">{selectedRequest.fullName}</dd></div>
+                  <div><dt className={DT}>Account Name</dt><dd className="mt-1 break-words text-sm text-ink">{selectedRequest.accountName}</dd></div>
+                  <div><dt className={DT}>Email</dt><dd className="mt-1 break-all text-sm text-ink">{selectedRequest.email}</dd></div>
+                  <div>
+                    <dt className={DT}>Position</dt>
+                    <dd className="mt-1">
+                      <span className={`chip tracking-wide ${getPositionColor(selectedRequest.position)}`}>
                         {selectedRequest.position.toUpperCase()}
                       </span>
-                    </div>
+                    </dd>
                   </div>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h4 className="font-medium mb-3">Request Status</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">Status</label>
-                      <span className={`inline-flex px-2 py-1 text-xs rounded-full ${getStatusColor(selectedRequest.status)}`}>
+                </dl>
+              </section>
+              <section className="rounded-2xl bg-sand-100 p-4 sm:p-5">
+                <h3 className="text-sm font-semibold text-ink">Request Status</h3>
+                <dl className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <dt className={DT}>Status</dt>
+                    <dd className="mt-1">
+                      <span className={`chip capitalize ${getStatusColor(selectedRequest.status)}`}>
                         {selectedRequest.status}
                       </span>
-                    </div>
-                    <div><label className="block text-sm font-medium text-gray-500">Submitted</label><p>{formatDate(selectedRequest.createdAt)}</p></div>
-                    {selectedRequest.approvedAt && (
-                      <div><label className="block text-sm font-medium text-gray-500">Approved</label><p>{formatDate(selectedRequest.approvedAt)}</p></div>
-                    )}
-                    {selectedRequest.rejectedAt && (
-                      <div><label className="block text-sm font-medium text-gray-500">Rejected</label><p>{formatDate(selectedRequest.rejectedAt)}</p></div>
-                    )}
+                    </dd>
                   </div>
-                </div>
-                {selectedRequest.status === 'rejected' && selectedRequest.rejectionReason && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                    <h4 className="font-medium text-red-900 mb-2">Rejection Reason</h4>
-                    <p className="text-sm text-red-800">{selectedRequest.rejectionReason}</p>
-                  </div>
-                )}
-                {selectedRequest.status === 'approved' && selectedRequest.supervisorId && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 className="font-medium text-blue-900 mb-2">Supervisor</h4>
-                    <p className="text-sm text-blue-800">
-                      {supervisors.find(s => String(s._id) === String(selectedRequest.supervisorId?._id || selectedRequest.supervisorId))?.fullName || 'Unknown'}
-                    </p>
-                  </div>
-                )}
-                {selectedRequest.status === 'pending' && (
-                  <div className="flex justify-end space-x-3 pt-4 border-t">
-                    <button
-                      onClick={() => { setShowViewModal(false); openActionModal(selectedRequest, 'reject'); }}
-                      className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                    >
-                      <X className="h-4 w-4 mr-2" /> Reject
-                    </button>
-                    <button
-                      onClick={() => { setShowViewModal(false); openActionModal(selectedRequest, 'approve'); }}
-                      className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                    >
-                      <Check className="h-4 w-4 mr-2" /> Approve
-                    </button>
-                  </div>
-                )}
-              </div>
+                  <div><dt className={DT}>Submitted</dt><dd className="mt-1 text-sm text-ink">{formatDate(selectedRequest.createdAt)}</dd></div>
+                  {selectedRequest.approvedAt && (
+                    <div><dt className={DT}>Approved</dt><dd className="mt-1 text-sm text-ink">{formatDate(selectedRequest.approvedAt)}</dd></div>
+                  )}
+                  {selectedRequest.rejectedAt && (
+                    <div><dt className={DT}>Rejected</dt><dd className="mt-1 text-sm text-ink">{formatDate(selectedRequest.rejectedAt)}</dd></div>
+                  )}
+                </dl>
+              </section>
+              {selectedRequest.status === 'rejected' && selectedRequest.rejectionReason && (
+                <section className="rounded-2xl border border-rose-300 bg-rose-100 p-4 sm:p-5">
+                  <h3 className="text-sm font-semibold text-rose-700">Rejection Reason</h3>
+                  <p className="mt-2 break-words text-sm text-ink/80">{selectedRequest.rejectionReason}</p>
+                </section>
+              )}
+              {selectedRequest.status === 'approved' && selectedRequest.supervisorId && (
+                <section className="rounded-2xl border border-brand-200 bg-brand-50 p-4 sm:p-5">
+                  <h3 className="text-sm font-semibold text-brand-700">Supervisor</h3>
+                  <p className="mt-2 text-sm text-ink/80">
+                    {supervisors.find(s => String(s._id) === String(selectedRequest.supervisorId?._id || selectedRequest.supervisorId))?.fullName || 'Unknown'}
+                  </p>
+                </section>
+              )}
             </div>
+            {selectedRequest.status === 'pending' && (
+              <div className="flex flex-col-reverse gap-2 border-t border-ink/[0.07] px-6 py-4 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => { setShowViewModal(false); openActionModal(selectedRequest, 'reject'); }}
+                  className="btn btn-danger btn-md"
+                >
+                  <X className="h-4 w-4" aria-hidden="true" /> Reject
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowViewModal(false); openActionModal(selectedRequest, 'approve'); }}
+                  className="btn btn-primary btn-md"
+                >
+                  <Check className="h-4 w-4" aria-hidden="true" /> Approve
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
 
       {/* Action Modal */}
       {showActionModal && selectedRequest && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-96">
-            <h3 className="text-lg font-medium mb-4">{actionType === 'approve' ? 'Approve' : 'Reject'} Request</h3>
-            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-              <p className="font-medium">{selectedRequest.fullName}</p>
-              <p className="text-sm text-gray-500">{selectedRequest.email}</p>
-              <p className="text-sm text-gray-500">Position: {selectedRequest.position}</p>
-            </div>
-            {actionType === 'approve' && selectedRequest.position !== 'moderator' && (
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">Assign Supervisor *</label>
-                <select
-                  value={selectedSupervisor}
-                  onChange={(e) => setSelectedSupervisor(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                >
-                  <option value="">Select supervisor</option>
-                  {supervisors.map((s) => (
-                    <option key={s._id} value={s._id}>{s.fullName} (@{s.accountName})</option>
-                  ))}
-                </select>
-              </div>
-            )}
-            {actionType === 'reject' && (
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">Rejection Reason *</label>
-                <textarea
-                  value={rejectionReason}
-                  onChange={(e) => setRejectionReason(e.target.value)}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  placeholder="Reason..."
-                />
-              </div>
-            )}
-            <div className="flex justify-end space-x-3">
-              <button onClick={() => setShowActionModal(false)} className="px-4 py-2 bg-gray-300 rounded-lg">Cancel</button>
+        <div className="modal-backdrop">
+          <div className="modal-panel max-w-lg" role="dialog" aria-modal="true" aria-labelledby="company-action-title">
+            <div className="flex items-center justify-between gap-4 border-b border-ink/[0.07] px-6 py-5">
+              <h2 id="company-action-title" className="font-display text-2xl text-ink">{actionType === 'approve' ? 'Approve' : 'Reject'} Request</h2>
               <button
+                type="button"
+                onClick={() => setShowActionModal(false)}
+                aria-label="Close"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink/55 transition-colors hover:bg-ink/5 hover:text-ink"
+              >
+                <X className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </div>
+            <div className="space-y-5 p-6">
+              <div className="rounded-2xl bg-sand-100 p-4">
+                <p className="break-words font-medium text-ink">{selectedRequest.fullName}</p>
+                <p className="break-all text-sm text-ink/55">{selectedRequest.email}</p>
+                <p className="mt-1 text-sm text-ink/55">Position: <span className="uppercase">{selectedRequest.position}</span></p>
+              </div>
+              {actionType === 'approve' && selectedRequest.position !== 'moderator' && (
+                <div>
+                  <label htmlFor="assign-supervisor" className="field-label">Assign Supervisor *</label>
+                  <select
+                    id="assign-supervisor"
+                    value={selectedSupervisor}
+                    onChange={(e) => setSelectedSupervisor(e.target.value)}
+                    className="field"
+                  >
+                    <option value="">Select supervisor</option>
+                    {supervisors.map((s) => (
+                      <option key={s._id} value={s._id}>{s.fullName} (@{s.accountName})</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {actionType === 'reject' && (
+                <div>
+                  <label htmlFor="rejection-reason" className="field-label">Rejection Reason *</label>
+                  <textarea
+                    id="rejection-reason"
+                    value={rejectionReason}
+                    onChange={(e) => setRejectionReason(e.target.value)}
+                    rows={3}
+                    className="field resize-none"
+                    placeholder="Reason..."
+                  />
+                </div>
+              )}
+              {error && (
+                <div className="alert alert-error" role="alert">
+                  <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
+                  <p className="flex-1">{error}</p>
+                </div>
+              )}
+            </div>
+            <div className="flex flex-col-reverse gap-2 border-t border-ink/[0.07] px-6 py-4 sm:flex-row sm:justify-end">
+              <button type="button" onClick={() => setShowActionModal(false)} className="btn btn-ghost btn-md">Cancel</button>
+              <button
+                type="button"
                 onClick={confirmAction}
                 disabled={processingRequest === selectedRequest._id}
-                className={`px-4 py-2 text-white rounded-lg ${actionType === 'approve' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}
+                className={`btn btn-md ${actionType === 'approve' ? 'btn-primary' : 'btn-danger'}`}
               >
-                {processingRequest === selectedRequest._id ? <Loader className="animate-spin h-4 w-4" /> : actionType === 'approve' ? 'Approve' : 'Reject'}
+                {processingRequest === selectedRequest._id ? <Loader className="animate-spin h-4 w-4" aria-hidden="true" /> : actionType === 'approve' ? 'Approve' : 'Reject'}
               </button>
             </div>
           </div>
